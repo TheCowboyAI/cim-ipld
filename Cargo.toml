@@ -18,12 +18,17 @@ blake3 = "1.5"
 thiserror = "2.0"
 bytes = "1.5"
 
+# NATS Object Store dependencies
+async-nats = { version = "0.41", features = ["service"] }
+tokio = { version = "1.45", features = ["full"] }
+futures = "0.3"
+zstd = "0.13"
+lru = "0.12"
+tracing = "0.1"
+
 [dev-dependencies]
-tokio = { version = "1", features = ["full"] }
-uuid = { version = "1.6", features = ["v4", "serde"] }
+tokio-test = "0.4"
+uuid = { version = "1.10", features = ["v4"] }
 
 [features]
 default = []
-
-# Make this an independent workspace
-[workspace]
