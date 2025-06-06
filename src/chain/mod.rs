@@ -207,7 +207,7 @@ impl<T: TypedContent> ContentChain<T> {
             .items
             .iter()
             .position(|e| e.cid == cid)
-            .ok_or_else(|| Error::InvalidCid(format!("CID not found in chain: {}", cid)))?;
+            .ok_or_else(|| Error::InvalidCid(format!("CID not found in chain: {cid}")))?;
 
         // Return all items after that one
         Ok(self.items[start_idx + 1..].iter().collect())
