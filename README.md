@@ -161,6 +161,14 @@ Licensed under either of:
 
 at your option.
 
+## Documentation
+
+- [User Stories](docs/USER_STORIES.md) - Detailed user stories and use cases
+- [Architecture](docs/ARCHITECTURE.md) - System architecture and design decisions
+- [Developer Guide](docs/DEVELOPER_GUIDE.md) - Comprehensive guide for developers
+- [API Reference](docs/API.md) - Complete API documentation
+- [Migration Guide](docs/MIGRATION_GUIDE.md) - Guide for migrating from other storage systems
+
 ## Links
 
 - [CIM Architecture](https://github.com/thecowboyai/alchemist)
