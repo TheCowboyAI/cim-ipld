@@ -168,6 +168,8 @@ at your option.
 - [Developer Guide](docs/DEVELOPER_GUIDE.md) - Comprehensive guide for developers
 - [API Reference](docs/API.md) - Complete API documentation
 - [Migration Guide](docs/MIGRATION_GUIDE.md) - Guide for migrating from other storage systems
+- [Test Coverage Assessment](docs/TEST_COVERAGE_ASSESSMENT.md) - Current test coverage analysis
+- [Test Implementation Roadmap](docs/TEST_IMPLEMENTATION_ROADMAP.md) - Plan for comprehensive testing
 
 ## Links
 
