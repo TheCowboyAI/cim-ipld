@@ -11,10 +11,24 @@ pub trait TypedContent: Serialize + DeserializeOwned + Send + Sync {
     /// The content type identifier
     const CONTENT_TYPE: ContentType;
 
+    /// Extract the canonical payload for CID calculation.
+    ///
+    /// This should return only the actual content data, excluding any
+    /// transient metadata like timestamps, UUIDs, or message wrappers
+    /// that would make identical content have different CIDs.
+    ///
+    /// By default, this serializes the entire struct, but implementations
+    /// should override this to extract only the stable payload.
+    fn canonical_payload(&self) -> Result<Vec<u8>> {
+        // Default implementation serializes the whole struct
+        // Override this for types with metadata that should be excluded
+        self.to_bytes()
+    }
+
     /// Calculate the CID for this content
     fn calculate_cid(&self) -> Result<Cid> {
-        // Serialize to bytes
-        let bytes = serde_json::to_vec(self)?;
+        // Use canonical payload instead of full serialization
+        let bytes = self.canonical_payload()?;
 
         // Create hash using BLAKE3
         let hash = blake3::hash(&bytes);
