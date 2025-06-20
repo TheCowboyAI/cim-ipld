@@ -8,7 +8,7 @@ use rand::{Rng, thread_rng};
 use serde::{Serialize, Deserialize};
 
 use cim_ipld::{
-    object_store::{NatsObjectStore, ContentStorageService},
+    object_store::NatsObjectStore,
     chain::ContentChain,
     TypedContent,
     ContentType,
@@ -57,7 +57,7 @@ impl TestContext {
     }
 
     /// Corrupt content at the given CID
-    pub async fn corrupt_content(&self, cid: &Cid) -> Result<()> {
+    pub async fn corrupt_content(&self, _cid: &Cid) -> Result<()> {
         // This would need access to the underlying storage to corrupt data
         // For now, we'll simulate by storing corrupted data with the same CID
         let mut corrupted = vec![0u8; 100];
@@ -78,7 +78,7 @@ impl TestContext {
                 data: format!("Test data {}", i),
                 value: i as u64,
             };
-            chain.append(content, &*self.storage).await?;
+            chain.append(content)?;
         }
 
         Ok(chain)
@@ -109,12 +109,7 @@ impl NatsTestHarness {
     }
 }
 
-impl Drop for NatsTestHarness {
-    fn drop(&mut self) {
-        // Attempt to clean up in drop, but don't panic if it fails
-        let _ = tokio::runtime::Handle::current().block_on(self.cleanup());
-    }
-}
+// No drop implementation needed - NATS client will clean up automatically
 
 /// Generate test content of specified size
 pub fn generate_test_content(size: usize) -> Vec<u8> {
@@ -207,7 +202,7 @@ pub mod assertions {
     }
 
     /// Assert that content matches
-    pub fn assert_content_equal<T: PartialEq>(expected: &T, actual: &T) {
+    pub fn assert_content_equal<T: PartialEq + std::fmt::Debug>(expected: &T, actual: &T) {
         assert_eq!(
             expected, actual,
             "Content mismatch"

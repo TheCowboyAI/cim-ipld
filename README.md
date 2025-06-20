@@ -18,6 +18,14 @@ CIM-IPLD provides a content-addressed storage foundation for all CIM nodes, enab
 - 🔌 **Extensible**: Register custom codecs for your content types
 - 🚀 **Performance**: BLAKE3 hashing for fast content addressing
 - 📦 **Codec Registry**: Manage content types with codec identifiers
+- 🌐 **Standard IPLD Codecs**: Full support for dag-cbor, dag-json, raw, and more
+- 🏗️ **CIM-Specific JSON Types**: Custom codecs for alchemist, workflow-graph, context-graph
+- 📄 **Rich Content Types**: Built-in support for PDF, DOCX, Markdown, JPEG, PNG, MP3, MP4, and more
+- 🔍 **Content Service**: High-level API with full-text search and indexing
+- 🔄 **Content Transformation**: Convert between formats (extensible transformer system)
+- 💾 **NATS Object Store**: Reliable distributed storage backend
+- ♻️ **Automatic Deduplication**: Content deduplication based on CIDs
+- 🗂️ **Domain Partitioning**: Intelligent content routing to domain-specific buckets
 
 ## Installation
 
@@ -93,26 +101,113 @@ let mut registry = CodecRegistry::new();
 registry.register(Arc::new(MyCustomCodec))?;
 ```
 
+## IPLD Codec Support
+
+### Standard IPLD Codecs
+
+CIM-IPLD includes full support for standard IPLD codecs:
+
+| Codec      | Code   | Description        |
+| ---------- | ------ | ------------------ |
+| raw        | 0x55   | Raw binary data    |
+| json       | 0x0200 | Standard JSON      |
+| cbor       | 0x51   | Standard CBOR      |
+| dag-pb     | 0x70   | MerkleDAG protobuf |
+| dag-cbor   | 0x71   | MerkleDAG CBOR     |
+| dag-json   | 0x0129 | MerkleDAG JSON     |
+| libp2p-key | 0x72   | Libp2p public key  |
+| git-raw    | 0x78   | Git objects        |
+
+### CIM-Specific JSON Types
+
+| Type           | Code     | Description                  |
+| -------------- | -------- | ---------------------------- |
+| alchemist      | 0x340000 | Alchemist configuration      |
+| workflow-graph | 0x340001 | Workflow graph definitions   |
+| context-graph  | 0x340002 | Context graph structures     |
+| concept-space  | 0x340003 | Conceptual space definitions |
+| domain-model   | 0x340004 | Domain model specifications  |
+| event-stream   | 0x340005 | Event stream metadata        |
+| command-batch  | 0x340006 | Command batch definitions    |
+| query-result   | 0x340007 | Query result structures      |
+
+### Using IPLD Codecs
+
+```rust
+use cim_ipld::{DagCborCodec, DagJsonCodec, CodecOperations};
+
+// Any serializable type can use IPLD codecs
+let data = MyStruct { ... };
+
+// Encode as DAG-CBOR
+let cbor = data.to_dag_cbor()?;
+let cbor_alt = DagCborCodec::encode(&data)?;
+
+// Encode as DAG-JSON
+let json = data.to_dag_json()?;
+let pretty = data.to_dag_json_pretty()?;
+
+// Decode
+let decoded: MyStruct = DagCborCodec::decode(&cbor)?;
+```
+
 ## Content Types
 
 CIM-IPLD defines standard content types:
 
-| Type | Codec | Range |
-|------|-------|-------|
-| Event | 0x300000 | Core CIM types |
-| Graph | 0x300001 | |
-| Node | 0x300002 | |
-| Edge | 0x300003 | |
-| Command | 0x300004 | |
-| Query | 0x300005 | |
-| Markdown | 0x310000 | Document types |
-| JSON | 0x310001 | |
-| YAML | 0x310002 | |
-| TOML | 0x310003 | |
-| Image | 0x320000 | Media types |
-| Video | 0x320001 | |
-| Audio | 0x320002 | |
-| Custom | 0x330000+ | Your types |
+| Type     | Codec     | Range          |
+| -------- | --------- | -------------- |
+| Event    | 0x300000  | Core CIM types |
+| Graph    | 0x300001  |                |
+| Node     | 0x300002  |                |
+| Edge     | 0x300003  |                |
+| Command  | 0x300004  |                |
+| Query    | 0x300005  |                |
+| Markdown | 0x310000  | Document types |
+| JSON     | 0x310001  |                |
+| YAML     | 0x310002  |                |
+| TOML     | 0x310003  |                |
+| Image    | 0x320000  | Media types    |
+| Video    | 0x320001  |                |
+| Audio    | 0x320002  |                |
+| Custom   | 0x330000+ | Your types     |
+
+## Content Service
+
+The Content Service provides a high-level API for managing typed content:
+
+```rust
+use cim_ipld::content_types::service::{ContentService, ContentServiceConfig};
+
+// Configure and create service
+let config = ContentServiceConfig {
+    auto_index: true,
+    max_content_size: 10 * 1024 * 1024, // 10MB
+    enable_deduplication: true,
+    ..Default::default()
+};
+let service = ContentService::new(storage, config);
+
+// Store documents with metadata
+let result = service.store_document(
+    content.as_bytes().to_vec(),
+    DocumentMetadata {
+        title: Some("My Document".to_string()),
+        tags: vec!["example".to_string()],
+        ..Default::default()
+    },
+    "markdown"
+).await?;
+
+// Search content
+let results = service.search(SearchQuery {
+    text: Some("example".to_string()),
+    tags: vec!["demo".to_string()],
+    ..Default::default()
+}).await?;
+```
+
+See [CONTENT_SERVICE.md](CONTENT_SERVICE.md) for comprehensive documentation.
 
 ## Chain Validation
 
@@ -170,6 +265,10 @@ at your option.
 - [Migration Guide](docs/MIGRATION_GUIDE.md) - Guide for migrating from other storage systems
 - [Test Coverage Assessment](docs/TEST_COVERAGE_ASSESSMENT.md) - Current test coverage analysis
 - [Test Implementation Roadmap](docs/TEST_IMPLEMENTATION_ROADMAP.md) - Plan for comprehensive testing
+- [Content Types](CONTENT_TYPES.md) - Guide to using built-in content types
+- [Content Service](CONTENT_SERVICE.md) - High-level content management API
+- [IPLD Codecs](IPLD_CODECS.md) - Standard IPLD codec support and CIM-specific types
+- [Domain Partitioning](docs/DOMAIN_PARTITIONING.md) - Automatic content routing to domain buckets
 
 ## Links
 

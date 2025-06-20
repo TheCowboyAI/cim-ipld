@@ -2,6 +2,8 @@
 
 mod nats_object_store;
 mod content_storage;
+mod pull_utils;
+mod domain_partitioner;
 
 pub use nats_object_store::{
     NatsObjectStore,
@@ -13,6 +15,19 @@ pub use nats_object_store::{
 pub use content_storage::{
     ContentStorageService,
     CacheStats,
+};
+pub use pull_utils::{
+    PullOptions,
+    PullResult,
+    BatchPullResult,
+    helpers,
+};
+pub use domain_partitioner::{
+    ContentDomain,
+    PartitionStrategy,
+    PatternMatcher,
+    DomainContentInfo,
+    DetectionMethod,
 };
 
 // Re-export Result type

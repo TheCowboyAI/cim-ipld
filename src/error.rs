@@ -6,6 +6,9 @@ use thiserror::Error;
 pub enum Error {
     #[error("Failed to serialize content: {0}")]
     SerializationError(#[from] serde_json::Error),
+    
+    #[error("CBOR serialization error: {0}")]
+    CborError(String),
 
     #[error("Invalid CID: {0}")]
     InvalidCid(String),
@@ -27,6 +30,9 @@ pub enum Error {
 
     #[error("Multihash error: {0}")]
     MultihashError(String),
+
+    #[error("Invalid content: {0}")]
+    InvalidContent(String),
 }
 
 pub type Result<T> = std::result::Result<T, Error>;

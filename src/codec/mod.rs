@@ -1,5 +1,7 @@
 //! Codec registry and implementations for CIM-IPLD
 
+pub mod ipld_codecs;
+
 use crate::{Error, Result};
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -16,6 +18,7 @@ pub trait CimCodec: Send + Sync {
 /// Registry for CIM codecs
 pub struct CodecRegistry {
     codecs: HashMap<u64, Arc<dyn CimCodec>>,
+    standard_codecs: HashMap<u64, Arc<dyn CimCodec>>,
 }
 
 impl CodecRegistry {
@@ -23,6 +26,7 @@ impl CodecRegistry {
     pub fn new() -> Self {
         let mut registry = Self {
             codecs: HashMap::new(),
+            standard_codecs: HashMap::new(),
         };
 
         // Register base codecs
@@ -32,8 +36,11 @@ impl CodecRegistry {
 
     /// Register base codecs for common content types
     fn register_base_codecs(&mut self) {
-        // These would be implemented as needed
-        // For now, we'll use the default JSON encoding
+        // Register standard IPLD codecs
+        let _ = ipld_codecs::register_ipld_codecs(self);
+        
+        // Register CIM-specific JSON codecs
+        let _ = ipld_codecs::register_cim_json_codecs(self);
     }
 
     /// Register a custom codec
@@ -49,19 +56,31 @@ impl CodecRegistry {
         Ok(())
     }
 
+    /// Register a standard IPLD codec (no range validation)
+    pub fn register_standard(&mut self, codec: Arc<dyn CimCodec>) -> Result<()> {
+        let code = codec.code();
+        self.standard_codecs.insert(code, codec);
+        Ok(())
+    }
+
     /// Get a codec by its code
     pub fn get(&self, code: u64) -> Option<&Arc<dyn CimCodec>> {
         self.codecs.get(&code)
+            .or_else(|| self.standard_codecs.get(&code))
     }
 
     /// Check if a codec is registered
     pub fn contains(&self, code: u64) -> bool {
-        self.codecs.contains_key(&code)
+        self.codecs.contains_key(&code) || self.standard_codecs.contains_key(&code)
     }
 
     /// Get all registered codec codes
     pub fn codes(&self) -> Vec<u64> {
-        self.codecs.keys().copied().collect()
+        let mut codes: Vec<u64> = self.codecs.keys().copied().collect();
+        codes.extend(self.standard_codecs.keys().copied());
+        codes.sort_unstable();
+        codes.dedup();
+        codes
     }
 }
 
