@@ -85,10 +85,13 @@ struct LifecycleHooks {
     /// Called before content is stored
     pre_store: Vec<Box<dyn Fn(&[u8], &ContentType) -> Result<()> + Send + Sync>>,
     /// Called after content is stored
+    #[allow(dead_code)]
     post_store: Vec<Box<dyn Fn(&Cid, &ContentType) + Send + Sync>>,
     /// Called before content is retrieved
+    #[allow(dead_code)]
     pre_retrieve: Vec<Box<dyn Fn(&Cid) + Send + Sync>>,
     /// Called after content is retrieved
+    #[allow(dead_code)]
     post_retrieve: Vec<Box<dyn Fn(&Cid, &[u8]) + Send + Sync>>,
 }
 

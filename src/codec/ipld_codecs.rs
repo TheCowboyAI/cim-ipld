@@ -103,19 +103,19 @@ impl DagJsonCodec {
     /// Encode data as DAG-JSON
     pub fn encode<T: Serialize>(data: &T) -> Result<Vec<u8>> {
         serde_json::to_vec(data)
-            .map_err(|e| Error::SerializationError(e))
+            .map_err(Error::SerializationError)
     }
 
     /// Decode DAG-JSON data
     pub fn decode<T: for<'de> Deserialize<'de>>(data: &[u8]) -> Result<T> {
         serde_json::from_slice(data)
-            .map_err(|e| Error::SerializationError(e))
+            .map_err(Error::SerializationError)
     }
 
     /// Pretty-print encode
     pub fn encode_pretty<T: Serialize>(data: &T) -> Result<String> {
         serde_json::to_string_pretty(data)
-            .map_err(|e| Error::SerializationError(e))
+            .map_err(Error::SerializationError)
     }
 }
 

@@ -6,13 +6,57 @@
 use crate::{
     content_types::{
         MarkdownDocument,
-        DocumentMetadata,
-        AudioMetadata,
         VideoMetadata,
     },
     Error, Result,
 };
 use std::collections::HashMap;
+
+// Define AudioFormat and AudioMetadata locally if they're not available
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum AudioFormat {
+    Mp3,
+    Wav,
+    Flac,
+    Ogg,
+    Aac,
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct AudioMetadata {
+    pub duration_ms: Option<u64>,
+    pub sample_rate: Option<u32>,
+    pub channels: Option<u8>,
+    pub bitrate: Option<u32>,
+    pub codec: Option<String>,
+    pub artist: Option<String>,
+    pub album: Option<String>,
+    pub title: Option<String>,
+    pub year: Option<u32>,
+    pub tags: Vec<String>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum DocumentFormat {
+    Text,
+    Markdown,
+    Html,
+    Pdf,
+    Docx,
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct DocumentTransformOptions {
+    pub preserve_formatting: bool,
+    pub include_metadata: bool,
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct TextSearchOptions {
+    pub case_sensitive: bool,
+    pub whole_words: bool,
+    pub regex: bool,
+}
 
 /// Trait for content that can be transformed to other formats
 pub trait Transformable {

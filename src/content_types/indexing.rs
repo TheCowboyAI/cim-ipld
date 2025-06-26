@@ -37,8 +37,8 @@ mod cid_serde {
     }
 }
 
-/// Searchable index for content metadata
-#[derive(Debug, Clone)]
+/// Main content indexing service
+#[derive(Default)]
 pub struct ContentIndex {
     /// Inverted index for text search
     text_index: Arc<RwLock<TextIndex>>,
