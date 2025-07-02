@@ -79,20 +79,26 @@ impl Default for ContentServiceConfig {
     }
 }
 
+// Type aliases for lifecycle hooks
+type PreStoreHook = Box<dyn Fn(&[u8], &ContentType) -> Result<()> + Send + Sync>;
+type PostStoreHook = Box<dyn Fn(&Cid, &ContentType) + Send + Sync>;
+type PreRetrieveHook = Box<dyn Fn(&Cid) + Send + Sync>;
+type PostRetrieveHook = Box<dyn Fn(&Cid, &[u8]) + Send + Sync>;
+
 /// Lifecycle hooks for content operations
 #[derive(Default)]
 struct LifecycleHooks {
     /// Called before content is stored
-    pre_store: Vec<Box<dyn Fn(&[u8], &ContentType) -> Result<()> + Send + Sync>>,
+    pre_store: Vec<PreStoreHook>,
     /// Called after content is stored
     #[allow(dead_code)]
-    post_store: Vec<Box<dyn Fn(&Cid, &ContentType) + Send + Sync>>,
+    post_store: Vec<PostStoreHook>,
     /// Called before content is retrieved
     #[allow(dead_code)]
-    pre_retrieve: Vec<Box<dyn Fn(&Cid) + Send + Sync>>,
+    pre_retrieve: Vec<PreRetrieveHook>,
     /// Called after content is retrieved
     #[allow(dead_code)]
-    post_retrieve: Vec<Box<dyn Fn(&Cid, &[u8]) + Send + Sync>>,
+    post_retrieve: Vec<PostRetrieveHook>,
 }
 
 /// Content storage result with metadata
@@ -192,8 +198,7 @@ impl ContentService {
             }
             _ => {
                 return Err(Error::InvalidContent(format!(
-                    "Unsupported document format: {}",
-                    format
+                    "Unsupported document format: {format}"
                 )));
             }
         };
@@ -248,8 +253,7 @@ impl ContentService {
             }
             _ => {
                 return Err(Error::InvalidContent(format!(
-                    "Unsupported image format: {}",
-                    format
+                    "Unsupported image format: {format}"
                 )));
             }
         };
@@ -290,7 +294,7 @@ impl ContentService {
         // Store if not deduplicated
         let size = if !deduplicated {
             let stored_cid = self.storage.put(&content).await
-                .map_err(|e| Error::InvalidContent(format!("Storage error: {}", e)))?;
+                .map_err(|e| Error::InvalidContent(format!("Storage error: {e}")))?;
             assert_eq!(cid, stored_cid); // Verify CID consistency
             
             // Get actual size from storage
@@ -330,7 +334,7 @@ impl ContentService {
 
         // Retrieve from storage
         let content: T = self.storage.get(cid).await
-            .map_err(|e| Error::InvalidContent(format!("Storage error: {}", e)))?;
+            .map_err(|e| Error::InvalidContent(format!("Storage error: {e}")))?;
 
         // Call post-retrieve hooks
         {
@@ -376,7 +380,7 @@ impl ContentService {
     ) -> Result<Vec<Cid>> {
         // Get objects from storage
         let objects = self.storage.list_by_content_type(content_type.codec(), None).await
-            .map_err(|e| Error::InvalidContent(format!("Storage error: {}", e)))?;
+            .map_err(|e| Error::InvalidContent(format!("Storage error: {e}")))?;
 
         // Extract CIDs
         let mut cids: Vec<Cid> = objects.into_iter().map(|info| info.cid).collect();
