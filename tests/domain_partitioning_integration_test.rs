@@ -1,9 +1,7 @@
 //! Integration tests for domain partitioning with real document content
 
-use cim_ipld::object_store::{
-    ContentDomain, PartitionStrategy, PatternMatcher, NatsObjectStore,
-};
 use cim_ipld::content_types::*;
+use cim_ipld::object_store::{ContentDomain, NatsObjectStore, PartitionStrategy, PatternMatcher};
 use cim_ipld::TypedContent;
 use std::collections::HashMap;
 
@@ -22,7 +20,7 @@ fn create_metadata(title: &str, author: &str, keywords: Vec<&str>) -> DocumentMe
 #[test]
 fn test_legal_document_variations() {
     let strategy = PartitionStrategy::default();
-    
+
     // Test 1: Service Agreement
     let service_agreement = "SERVICE AGREEMENT
 
@@ -114,7 +112,7 @@ POLICY GUIDELINES:
 #[test]
 fn test_financial_document_variations() {
     let strategy = PartitionStrategy::default();
-    
+
     // Test 1: Detailed Invoice
     let invoice = "INVOICE
 
@@ -227,7 +225,7 @@ Key Metrics:
 #[test]
 fn test_medical_document_variations() {
     let strategy = PartitionStrategy::default();
-    
+
     // Test 1: Patient Medical Record
     let medical_record = "PATIENT MEDICAL RECORD
 
@@ -337,7 +335,7 @@ Member Services: 1-800-123-4567";
 #[test]
 fn test_social_media_content() {
     let strategy = PartitionStrategy::default();
-    
+
     // Test 1: Twitter/X-style post
     let tweet = "Just launched our new product! 🚀 #startup #innovation #tech @techcrunch 
 
@@ -345,12 +343,7 @@ Check it out at https://example.com and don't forget to retweet if you like it!
 
 What do you think? Drop a comment below 👇";
 
-    let domain = strategy.determine_domain(
-        Some("social_post.json"),
-        None,
-        Some(tweet),
-        None,
-    );
+    let domain = strategy.determine_domain(Some("social_post.json"), None, Some(tweet), None);
     assert_eq!(domain, ContentDomain::SocialMedia);
 
     // Test 2: Meme content
@@ -366,12 +359,7 @@ LOL this is so relatable! Tag a developer friend who needs to see this funny mem
 
 #programminghumor #meme #viral #trending";
 
-    let domain = strategy.determine_domain(
-        Some("dev_meme.txt"),
-        None,
-        Some(meme_text),
-        None,
-    );
+    let domain = strategy.determine_domain(Some("dev_meme.txt"), None, Some(meme_text), None);
     assert_eq!(domain, ContentDomain::Memes);
 
     // Test 3: Blog post (should be Posts)
@@ -405,19 +393,14 @@ John
 
 Sent from my iPhone";
 
-    let domain = strategy.determine_domain(
-        Some("message.txt"),
-        None,
-        Some(message),
-        None,
-    );
+    let domain = strategy.determine_domain(Some("message.txt"), None, Some(message), None);
     assert_eq!(domain, ContentDomain::Messages);
 }
 
 #[test]
 fn test_technical_content() {
     let strategy = PartitionStrategy::default();
-    
+
     // Test 1: Source code
     let rust_code = r#"use std::collections::HashMap;
 
@@ -436,12 +419,8 @@ mod tests {
     }
 }"#;
 
-    let domain = strategy.determine_domain(
-        Some("main.rs"),
-        Some("text/x-rust"),
-        Some(rust_code),
-        None,
-    );
+    let domain =
+        strategy.determine_domain(Some("main.rs"), Some("text/x-rust"), Some(rust_code), None);
     assert_eq!(domain, ContentDomain::SourceCode);
 
     // Test 2: Configuration file
@@ -521,7 +500,7 @@ CREATE INDEX idx_users_username ON users(username);"#;
 #[test]
 fn test_academic_content() {
     let strategy = PartitionStrategy::default();
-    
+
     // Test 1: Research paper
     let paper = "Abstract
 
@@ -574,12 +553,8 @@ Research Objectives:
 Expected Outcomes:
 This research will provide critical data for conservation efforts.";
 
-    let domain = strategy.determine_domain(
-        Some("research_proposal.docx"),
-        None,
-        Some(proposal),
-        None,
-    );
+    let domain =
+        strategy.determine_domain(Some("research_proposal.docx"), None, Some(proposal), None);
     assert_eq!(domain, ContentDomain::Research);
 
     // Test 3: Educational material
@@ -646,7 +621,7 @@ Digital transformation requires strong leadership and employee buy-in.";
 #[test]
 fn test_government_documents() {
     let strategy = PartitionStrategy::default();
-    
+
     // Test 1: Government notice
     let notice = "OFFICIAL GOVERNMENT NOTICE
 
@@ -664,12 +639,7 @@ Affected Areas:
 
 For more information, contact the DOT at 1-800-ROADWORK";
 
-    let domain = strategy.determine_domain(
-        Some("public_notice.pdf"),
-        None,
-        Some(notice),
-        None,
-    );
+    let domain = strategy.determine_domain(Some("public_notice.pdf"), None, Some(notice), None);
     assert_eq!(domain, ContentDomain::Government);
 
     // Test 2: Business license
@@ -688,12 +658,7 @@ This license permits the above-named business to operate in accordance with city
 Issued by: City Clerk's Office
 Authorized Signature: _________________";
 
-    let domain = strategy.determine_domain(
-        Some("business_license.pdf"),
-        None,
-        Some(license),
-        None,
-    );
+    let domain = strategy.determine_domain(Some("business_license.pdf"), None, Some(license), None);
     assert_eq!(domain, ContentDomain::Licenses);
 
     // Test 3: Building permit
@@ -713,12 +678,7 @@ Inspection Required: Yes
 
 This permit is valid for 180 days from issue date.";
 
-    let domain = strategy.determine_domain(
-        Some("building_permit.pdf"),
-        None,
-        Some(permit),
-        None,
-    );
+    let domain = strategy.determine_domain(Some("building_permit.pdf"), None, Some(permit), None);
     assert_eq!(domain, ContentDomain::Permits);
 
     // Test 4: Public record
@@ -750,7 +710,7 @@ These records are provided in accordance with the Freedom of Information Act.";
 #[test]
 fn test_edge_cases_and_ambiguous_content() {
     let strategy = PartitionStrategy::default();
-    
+
     // Test 1: Document with multiple domain keywords
     let mixed_content = "MEDICAL INVOICE
 
@@ -770,12 +730,8 @@ Payment Due Date: February 10, 2024
 Please remit payment to: Medical Associates LLC";
 
     // Should classify as Medical due to medical keywords despite invoice format
-    let domain = strategy.determine_domain(
-        Some("medical_invoice.pdf"),
-        None,
-        Some(mixed_content),
-        None,
-    );
+    let domain =
+        strategy.determine_domain(Some("medical_invoice.pdf"), None, Some(mixed_content), None);
     assert_eq!(domain, ContentDomain::Medical);
 
     // Test 2: Generic document with no clear patterns
@@ -794,40 +750,26 @@ Action Items:
 - Send updated report";
 
     // Should default to Documents
-    let domain = strategy.determine_domain(
-        Some("meeting_notes.txt"),
-        None,
-        Some(generic),
-        None,
-    );
+    let domain = strategy.determine_domain(Some("meeting_notes.txt"), None, Some(generic), None);
     assert_eq!(domain, ContentDomain::Documents);
 
     // Test 3: Very short content
     let short_content = "Thanks for your help!";
 
     // Should use file extension
-    let domain = strategy.determine_domain(
-        Some("thank_you.txt"),
-        None,
-        Some(short_content),
-        None,
-    );
+    let domain = strategy.determine_domain(Some("thank_you.txt"), None, Some(short_content), None);
     assert_eq!(domain, ContentDomain::Documents);
 
     // Test 4: Empty content
-    let domain = strategy.determine_domain(
-        Some("empty.pdf"),
-        Some("application/pdf"),
-        Some(""),
-        None,
-    );
+    let domain =
+        strategy.determine_domain(Some("empty.pdf"), Some("application/pdf"), Some(""), None);
     assert_eq!(domain, ContentDomain::Documents);
 }
 
 #[test]
 fn test_custom_patterns_override() {
     let mut strategy = PartitionStrategy::default();
-    
+
     // Add custom pattern for company-specific documents
     strategy.add_pattern_matcher(PatternMatcher {
         name: "company_contract".to_string(),
@@ -851,12 +793,7 @@ Project Details:
 
 All information herein is strictly confidential.";
 
-    let domain = strategy.determine_domain(
-        Some("acme_project.pdf"),
-        None,
-        Some(company_doc),
-        None,
-    );
+    let domain = strategy.determine_domain(Some("acme_project.pdf"), None, Some(company_doc), None);
     assert_eq!(domain, ContentDomain::Contracts);
 }
 
@@ -905,13 +842,16 @@ async fn test_domain_partitioning_with_real_storage() {
             metadata: create_metadata("Test Document", "Test Author", vec!["test"]),
         };
 
-        let (cid, domain) = store.put_with_domain(
-            &pdf,
-            Some(filename),
-            Some("application/pdf"),
-            Some(content),
-            None,
-        ).await.unwrap();
+        let (cid, domain) = store
+            .put_with_domain(
+                &pdf,
+                Some(filename),
+                Some("application/pdf"),
+                Some(content),
+                None,
+            )
+            .await
+            .unwrap();
 
         assert_eq!(domain, expected_domain);
 
@@ -926,4 +866,4 @@ async fn test_domain_partitioning_with_real_storage() {
 
     let contracts = store.list_domain(ContentDomain::Contracts).await.unwrap();
     assert!(contracts.len() >= 1);
-} 
+}

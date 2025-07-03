@@ -62,9 +62,9 @@ Visit [our website](https://example.com) for more info!"#.to_string(),
     
     let html = document::markdown_to_html(&markdown)?;
     println!("Original Markdown (first 100 chars):");
-    println!("{}", &markdown.content[..100.min(markdown.content.len())]);
+    println!("{&markdown.content[..100.min(markdown.content.len(}"))]);
     println!("\nConverted HTML (first 200 chars):");
-    println!("{}", &html[..200.min(html.len())]);
+    println!("{&html[..200.min(html.len(}"))]);
     println!();
     
     Ok(())
@@ -77,8 +77,8 @@ fn demo_markdown_to_text() -> Result<()> {
     
     let plain_text = document::to_plain_text(markdown_content)?;
     
-    println!("Original: {}", markdown_content);
-    println!("Plain text: {}", plain_text);
+    println!("Original: {markdown_content}");
+    println!("Plain text: {plain_text}");
     println!();
     
     Ok(())
@@ -105,16 +105,16 @@ fn demo_image_conversion() -> Result<()> {
         0xAE, 0x42, 0x60, 0x82, // CRC
     ];
     
-    println!("Original PNG size: {} bytes", png_data.len());
+    println!("Original PNG size: {png_data.len(} bytes"));
     
     // Convert to JPEG
     match image::convert_format(&png_data, "png", "jpeg", Some(90)) {
         Ok(jpeg_data) => {
-            println!("Converted to JPEG, size: {} bytes", jpeg_data.len());
+            println!("Converted to JPEG, size: {jpeg_data.len(} bytes"));
         }
         Err(e) => {
             println!("Note: Image conversion requires valid image data");
-            println!("Error: {}", e);
+            println!("Error: {e}");
         }
     }
     
@@ -146,7 +146,7 @@ fn demo_audio_metadata() -> Result<()> {
         }
         Err(e) => {
             println!("Note: Full metadata extraction requires valid audio files");
-            println!("Error: {}", e);
+            println!("Error: {e}");
         }
     }
     
@@ -175,8 +175,7 @@ fn demo_video_metadata() -> Result<()> {
     println!("  Video codec: {:?}", metadata.video_codec);
     println!("  Audio codec: {:?}", metadata.audio_codec);
     println!("  Duration: {:?} ms", metadata.duration_ms);
-    println!("  Resolution: {}x{}", 
-        metadata.width.unwrap_or(0), 
+    println!("  Resolution: {metadata.width.unwrap_or(0}x{}"), 
         metadata.height.unwrap_or(0)
     );
     println!("  Tags: {:?}", metadata.tags);

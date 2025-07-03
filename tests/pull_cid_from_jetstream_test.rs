@@ -65,7 +65,7 @@ async fn test_pull_single_cid() -> Result<(), Box<dyn std::error::Error>> {
     
     // Store the content
     let cid = context.storage.put(&content).await?;
-    println!("Stored content with CID: {}", cid);
+    println!("Stored content with CID: {cid}");
     
     // Pull it back
     let pulled: PullTestContent = context.storage.get(&cid).await?;
@@ -77,7 +77,7 @@ async fn test_pull_single_cid() -> Result<(), Box<dyn std::error::Error>> {
     let calculated_cid = pulled.calculate_cid()?;
     assert_eq!(calculated_cid, cid);
     
-    println!("✓ Successfully pulled CID {} from JetStream", cid);
+    println!("✓ Successfully pulled CID {cid} from JetStream");
     
     Ok(())
 }
@@ -99,8 +99,8 @@ async fn test_list_and_pull_cids() -> Result<(), Box<dyn std::error::Error>> {
     let mut stored_cids = Vec::new();
     for i in 0..5 {
         let content = PullTestContent {
-            id: format!("list-test-{}", i),
-            title: format!("List Test Item {}", i),
+            id: format!("list-test-{i}"),
+            title: format!("List Test Item {i}"),
             data: vec![i as u8; 10],
             metadata: [
                 ("index".to_string(), i.to_string()),
@@ -111,7 +111,7 @@ async fn test_list_and_pull_cids() -> Result<(), Box<dyn std::error::Error>> {
         stored_cids.push(cid);
     }
     
-    println!("Stored {} items", stored_cids.len());
+    println!("Stored {stored_cids.len(} items"));
     
     // List CIDs in bucket
     let bucket = ContentBucket::for_content_type(PullTestContent::CONTENT_TYPE.codec());
@@ -123,8 +123,8 @@ async fn test_list_and_pull_cids() -> Result<(), Box<dyn std::error::Error>> {
     // Pull each stored CID
     for (i, cid) in stored_cids.iter().enumerate() {
         let pulled: PullTestContent = context.storage.get(cid).await?;
-        assert_eq!(pulled.id, format!("list-test-{}", i));
-        println!("✓ Pulled item {}: {}", i, cid);
+        assert_eq!(pulled.id, format!("list-test-{i}"));
+        println!("✓ Pulled item {i}: {cid}");
     }
     
     Ok(())
@@ -146,8 +146,8 @@ async fn test_pull_with_options() -> Result<(), Box<dyn std::error::Error>> {
     // Store items of various sizes
     for i in 0..10 {
         let content = PullTestContent {
-            id: format!("size-test-{}", i),
-            title: format!("Size Test {}", i),
+            id: format!("size-test-{i}"),
+            title: format!("Size Test {i}"),
             data: vec![0u8; i * 100], // Varying sizes
             metadata: Default::default(),
         };
@@ -172,7 +172,7 @@ async fn test_pull_with_options() -> Result<(), Box<dyn std::error::Error>> {
     for result in &results {
         assert!(result.metadata.size >= 200, "Min size filter failed");
         assert!(result.metadata.size <= 600, "Max size filter failed");
-        println!("✓ Pulled {} (size: {} bytes)", result.cid, result.metadata.size);
+        println!("✓ Pulled {result.cid} (size: {result.metadata.size} bytes)");
     }
     
     Ok(())
@@ -196,8 +196,8 @@ async fn test_batch_pull() -> Result<(), Box<dyn std::error::Error>> {
     let mut cids = Vec::new();
     for i in 0..5 {
         let content = PullTestContent {
-            id: format!("batch-{}", i),
-            title: format!("Batch Item {}", i),
+            id: format!("batch-{i}"),
+            title: format!("Batch Item {i}"),
             data: vec![i as u8; 20],
             metadata: Default::default(),
         };
@@ -220,8 +220,7 @@ async fn test_batch_pull() -> Result<(), Box<dyn std::error::Error>> {
     // Check the failed CID
     assert_eq!(batch_result.failed[0].0, fake_cid);
     
-    println!("✓ Batch pull: {} successful, {} failed", 
-        batch_result.successful.len(), 
+    println!("✓ Batch pull: {batch_result.successful.len(} successful, {} failed"), 
         batch_result.failed.len()
     );
     
@@ -252,11 +251,11 @@ async fn test_pull_by_prefix() -> Result<(), Box<dyn std::error::Error>> {
     };
     
     let target_cid = context.storage.put(&content).await?;
-    println!("Target CID: {}", target_cid);
+    println!("Target CID: {target_cid}");
     
     // Get first few characters of the CID as prefix
     let prefix = &target_cid.to_string()[..10];
-    println!("Searching with prefix: {}", prefix);
+    println!("Searching with prefix: {prefix}");
     
     // Pull by prefix
     let bucket = ContentBucket::for_content_type(PullTestContent::CONTENT_TYPE.codec());
@@ -269,7 +268,7 @@ async fn test_pull_by_prefix() -> Result<(), Box<dyn std::error::Error>> {
     let found = results.iter().any(|r| r.cid == target_cid);
     assert!(found, "Target CID not found in prefix search");
     
-    println!("✓ Found {} items with prefix {}", results.len(), prefix);
+    println!("✓ Found {results.len(} items with prefix {}"), prefix);
     
     Ok(())
 }
@@ -292,8 +291,8 @@ async fn test_stream_pull() -> Result<(), Box<dyn std::error::Error>> {
     // Store several items
     for i in 0..3 {
         let content = PullTestContent {
-            id: format!("stream-{}", i),
-            title: format!("Stream Item {}", i),
+            id: format!("stream-{i}"),
+            title: format!("Stream Item {i}"),
             data: vec![i as u8; 15],
             metadata: Default::default(),
         };
@@ -313,17 +312,17 @@ async fn test_stream_pull() -> Result<(), Box<dyn std::error::Error>> {
     while let Some(result) = stream.next().await {
         match result {
             Ok(pull_result) => {
-                println!("✓ Streamed: {} - {}", pull_result.cid, pull_result.content.title);
+                println!("✓ Streamed: {pull_result.cid} - {pull_result.content.title}");
                 count += 1;
             }
             Err(e) => {
-                eprintln!("Stream error: {}", e);
+                eprintln!("Stream error: {e}");
             }
         }
     }
     
     assert!(count > 0, "No items streamed");
-    println!("✓ Streamed {} items total", count);
+    println!("✓ Streamed {count} items total");
     
     Ok(())
 }
@@ -346,8 +345,8 @@ async fn test_pull_and_group() -> Result<(), Box<dyn std::error::Error>> {
     for (i, category) in categories.iter().enumerate() {
         for j in 0..3 {
             let content = PullTestContent {
-                id: format!("{}-{}", category, j),
-                title: format!("{} Item {}", category, j),
+                id: format!("{category}-{j}"),
+                title: format!("{category} Item {j}"),
                 data: vec![(i * 10 + j) as u8; 20],
                 metadata: [
                     ("category".to_string(), category.to_string()),
@@ -375,7 +374,7 @@ async fn test_pull_and_group() -> Result<(), Box<dyn std::error::Error>> {
         assert!(group.is_some(), "Category {} not found", category);
         
         let items = group.unwrap();
-        println!("✓ Category '{}' has {} items", category, items.len());
+        println!("✓ Category '{category}' has {items.len(} items"));
     }
     
     Ok(())
@@ -398,8 +397,8 @@ async fn test_pull_helpers() -> Result<(), Box<dyn std::error::Error>> {
     // Store test data
     for i in 0..5 {
         let content = PullTestContent {
-            id: format!("helper-{}", i),
-            title: format!("Helper Test {}", i),
+            id: format!("helper-{i}"),
+            title: format!("Helper Test {i}"),
             data: vec![i as u8; 10],
             metadata: [
                 ("priority".to_string(), (5 - i).to_string()),

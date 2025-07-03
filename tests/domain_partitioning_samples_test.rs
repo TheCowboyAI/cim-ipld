@@ -262,7 +262,7 @@ and insights throughout this project."#,
 
 /// Generate a social media post
 fn generate_social_media_post(topic: &str, hashtags: Vec<&str>) -> String {
-    let hashtag_str = hashtags.iter().map(|h| format!("#{}", h)).collect::<Vec<_>>().join(" ");
+    let hashtag_str = hashtags.iter().map(|h| format!("#{h}")).collect::<Vec<_>>().join(" ");
     format!(
         r#"🚀 Exciting news about {}! 
 
@@ -363,7 +363,7 @@ fn test_generated_invoices() {
         let invoice_content = generate_invoice(num, customer, amount);
         
         let domain = strategy.determine_domain(
-            Some(&format!("invoice_{}.pdf", num)),
+            Some(&format!("invoice_{num}.pdf")),
             Some("application/pdf"),
             Some(&invoice_content),
             None,
@@ -389,7 +389,7 @@ fn test_generated_medical_records() {
         let medical_content = generate_medical_record(patient, condition);
         
         let domain = strategy.determine_domain(
-            Some(&format!("medical_record_{}.pdf", patient.replace(" ", "_").to_lowercase())),
+            Some(&format!("medical_record_{patient.replace(" ", "_"}.pdf").to_lowercase())),
             Some("application/pdf"),
             Some(&medical_content),
             None,
@@ -414,8 +414,7 @@ fn test_generated_contracts() {
         let contract_content = generate_contract(provider, client, service);
         
         let domain = strategy.determine_domain(
-            Some(&format!("service_agreement_{}_{}.pdf", 
-                provider.replace(" ", "_").to_lowercase(),
+            Some(&format!("service_agreement_{provider.replace(" ", "_"}_{}.pdf").to_lowercase(),
                 client.replace(" ", "_").to_lowercase())),
             Some("application/pdf"),
             Some(&contract_content),
@@ -441,7 +440,7 @@ fn test_generated_research_papers() {
         let paper_content = generate_research_paper(title, author, field);
         
         let domain = strategy.determine_domain(
-            Some(&format!("{}.pdf", title.replace(" ", "_").replace(":", "").to_lowercase())),
+            Some(&format!("{title.replace(" ", "_"}.pdf").replace(":", "").to_lowercase())),
             Some("application/pdf"),
             Some(&paper_content),
             None,
@@ -466,7 +465,7 @@ fn test_generated_social_media() {
         let post_content = generate_social_media_post(topic, hashtags.clone());
         
         let domain = strategy.determine_domain(
-            Some(&format!("post_{}.json", topic.replace(" ", "_"))),
+            Some(&format!("post_{topic.replace(" ", "_"}.json"))),
             Some("application/json"),
             Some(&post_content),
             None,
@@ -492,7 +491,7 @@ fn test_generated_config_files() {
         let config_content = generate_config_file(app);
         
         let domain = strategy.determine_domain(
-            Some(&format!("{}.config.json", app)),
+            Some(&format!("{app}.config.json")),
             Some("application/json"),
             Some(&config_content),
             None,
@@ -613,8 +612,7 @@ fn test_batch_document_classification() {
         if domain == expected_domain {
             correct_classifications += 1;
         } else {
-            println!("Misclassified {}: expected {:?}, got {:?}", 
-                filename, expected_domain, domain);
+            println!("Misclassified {filename}: expected {:?}, got {:?}", expected_domain, domain);
         }
     }
 

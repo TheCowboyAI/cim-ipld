@@ -95,7 +95,7 @@ async fn test_storage_quota_exceeded() -> Result<()> {
     for size in sizes {
         let large_data = generate_test_content(size);
         let content = TestContent {
-            id: format!("quota-test-{}", size),
+            id: format!("quota-test-{size}"),
             data: base64::encode(&large_data),
             value: size as u64,
         };
@@ -106,7 +106,7 @@ async fn test_storage_quota_exceeded() -> Result<()> {
         // Then: Should handle appropriately
         match result {
             Ok(cid) => {
-                println!("Successfully stored {} bytes with CID: {}", size, cid);
+                println!("Successfully stored {size} bytes with CID: {cid}");
 
                 // Verify retrieval works
                 let retrieved_bytes = context.storage.get(&cid).await?;
@@ -114,7 +114,7 @@ async fn test_storage_quota_exceeded() -> Result<()> {
                 assert_eq!(retrieved.value, size as u64);
             }
             Err(e) => {
-                println!("Storage failed for {} bytes: {}", size, e);
+                println!("Storage failed for {size} bytes: {e}");
                 // This is expected for very large content
                 // Verify error is meaningful
                 assert!(
@@ -160,7 +160,7 @@ async fn test_corrupted_content_handling() -> Result<()> {
     );
 
     if let Err(e) = decode_result {
-        println!("Corruption detected: {}", e);
+        println!("Corruption detected: {e}");
         // Verify error is informative
         let error_string = e.to_string();
         assert!(
@@ -191,8 +191,8 @@ async fn test_chain_with_missing_items() -> Result<()> {
     let mut cids = vec![];
     for i in 0..5 {
         let content = TestContent {
-            id: format!("chain-missing-{}", i),
-            data: format!("Chain data {}", i),
+            id: format!("chain-missing-{i}"),
+            data: format!("Chain data {i}"),
             value: i as u64,
         };
         chain.append(content, &*context.storage).await?;
@@ -246,7 +246,7 @@ async fn test_concurrent_error_scenarios() -> Result<()> {
 
         match result {
             Err(e) => {
-                println!("Invalid CID error: {}", e);
+                println!("Invalid CID error: {e}");
                 Ok("Invalid CID handled correctly")
             }
             Ok(_) => Err(anyhow!("Should have failed with invalid CID")),
@@ -266,11 +266,11 @@ async fn test_concurrent_error_scenarios() -> Result<()> {
 
         match result {
             Ok(cid) => {
-                println!("Large content stored: {}", cid);
+                println!("Large content stored: {cid}");
                 Ok("Large content handled")
             }
             Err(e) => {
-                println!("Large content error: {}", e);
+                println!("Large content error: {e}");
                 Ok("Large content error handled")
             }
         }
@@ -281,7 +281,7 @@ async fn test_concurrent_error_scenarios() -> Result<()> {
 
     for (i, result) in results.into_iter().enumerate() {
         match result {
-            Ok(Ok(msg)) => println!("Scenario {} success: {}", i + 1, msg),
+            Ok(Ok(msg)) => println!("Scenario {i + 1} success: {msg}"),
             Ok(Err(e)) => panic!("Scenario {} failed: {}", i + 1, e),
             Err(e) => panic!("Scenario {} panicked: {}", i + 1, e),
         }
@@ -316,7 +316,7 @@ async fn test_retry_logic() -> Result<()> {
 
         if failing_backend.should_fail().await {
             last_error = Some(anyhow!("Simulated failure on attempt {}", attempts));
-            println!("Attempt {} failed", attempts);
+            println!("Attempt {attempts} failed");
             tokio::time::sleep(Duration::from_millis(100 * attempts as u64)).await;
             continue;
         }
@@ -325,7 +325,7 @@ async fn test_retry_logic() -> Result<()> {
         let result = context.storage.get(&cid).await?;
         let retrieved: TestContent = ContentCodec::decode(&result)?;
         assert_content_equal(&content, &retrieved);
-        println!("Succeeded on attempt {}", attempts);
+        println!("Succeeded on attempt {attempts}");
         return Ok(());
     }
 
@@ -340,8 +340,8 @@ async fn test_partial_write_failure() -> Result<()> {
     let mut contents = vec![];
     for i in 0..5 {
         contents.push(TestContent {
-            id: format!("partial-write-{}", i),
-            data: format!("Batch content {}", i),
+            id: format!("partial-write-{i}"),
+            data: format!("Batch content {i}"),
             value: i as u64,
         });
     }
@@ -354,18 +354,18 @@ async fn test_partial_write_failure() -> Result<()> {
         // Simulate failure on index 2
         if i == 2 {
             failed_indices.push(i);
-            println!("Simulated failure for item {}", i);
+            println!("Simulated failure for item {i}");
             continue;
         }
 
         match context.with_content(content.clone()).await {
             Ok(cid) => {
                 stored_cids.push((i, cid));
-                println!("Stored item {} with CID: {}", i, cid);
+                println!("Stored item {i} with CID: {cid}");
             }
             Err(e) => {
                 failed_indices.push(i);
-                println!("Failed to store item {}: {}", i, e);
+                println!("Failed to store item {i}: {e}");
             }
         }
     }

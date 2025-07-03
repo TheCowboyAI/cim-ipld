@@ -4,8 +4,8 @@
 //! to ensure that only the actual event data is used for CID calculation,
 //! excluding transient metadata like timestamps, UUIDs, and correlation IDs.
 
-use cim_ipld::{TypedContent, ContentType, Result};
-use serde::{Serialize, Deserialize, de::DeserializeOwned};
+use cim_ipld::{ContentType, Result, TypedContent};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::collections::HashMap;
 
 /// A domain event with both payload and metadata
@@ -119,9 +119,9 @@ fn main() -> Result<()> {
     };
 
     let event2 = DomainEvent {
-        event_id: "evt_999".to_string(), // Different ID
+        event_id: "evt_999".to_string(),               // Different ID
         timestamp: "2024-01-02T15:30:00Z".to_string(), // Different timestamp
-        correlation_id: Some("corr_888".to_string()), // Different correlation
+        correlation_id: Some("corr_888".to_string()),  // Different correlation
         causation_id: Some("cause_777".to_string()),
         event_type: "UserCreated".to_string(),
         aggregate_id: "user_789".to_string(),
@@ -135,9 +135,9 @@ fn main() -> Result<()> {
     let cid1 = event1.calculate_cid()?;
     let cid2 = event2.calculate_cid()?;
 
-    println!("Event 1 CID: {}", cid1);
-    println!("Event 2 CID: {}", cid2);
-    println!("CIDs are equal: {}", cid1 == cid2);
+    println!("Event 1 CID: {cid1}");
+    println!("Event 2 CID: {cid2}");
+    println!("CIDs are equal: {cid1 == cid2}");
     println!("✓ Same payload produces same CID despite different metadata\n");
 
     // Example 2: Different payloads produce different CIDs
@@ -155,8 +155,8 @@ fn main() -> Result<()> {
     };
 
     let cid3 = event3.calculate_cid()?;
-    println!("Event 3 CID: {}", cid3);
-    println!("CID1 != CID3: {}", cid1 != cid3);
+    println!("Event 3 CID: {cid3}");
+    println!("CID1 != CID3: {cid1 != cid3}");
     println!("✓ Different payload produces different CID\n");
 
     // Example 3: Message envelope
@@ -164,28 +164,28 @@ fn main() -> Result<()> {
         message_id: "msg_001".to_string(),
         sent_at: "2024-01-01T10:00:00Z".to_string(),
         sender: "service-a".to_string(),
-        headers: vec![
-            ("trace-id".to_string(), "trace_123".to_string()),
-        ].into_iter().collect(),
+        headers: vec![("trace-id".to_string(), "trace_123".to_string())]
+            .into_iter()
+            .collect(),
         content: "Important business data".to_string(),
     };
 
     let message2 = MessageEnvelope {
-        message_id: "msg_002".to_string(), // Different message ID
+        message_id: "msg_002".to_string(),           // Different message ID
         sent_at: "2024-01-02T15:00:00Z".to_string(), // Different time
-        sender: "service-b".to_string(), // Different sender
-        headers: vec![
-            ("trace-id".to_string(), "trace_999".to_string()),
-        ].into_iter().collect(),
+        sender: "service-b".to_string(),             // Different sender
+        headers: vec![("trace-id".to_string(), "trace_999".to_string())]
+            .into_iter()
+            .collect(),
         content: "Important business data".to_string(), // Same content!
     };
 
     let msg_cid1 = message1.calculate_cid()?;
     let msg_cid2 = message2.calculate_cid()?;
 
-    println!("Message 1 CID: {}", msg_cid1);
-    println!("Message 2 CID: {}", msg_cid2);
-    println!("Message CIDs are equal: {}", msg_cid1 == msg_cid2);
+    println!("Message 1 CID: {msg_cid1}");
+    println!("Message 2 CID: {msg_cid2}");
+    println!("Message CIDs are equal: {msg_cid1 == msg_cid2}");
     println!("✓ Same content produces same CID despite different envelope metadata");
 
     Ok(())

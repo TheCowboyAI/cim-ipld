@@ -92,7 +92,7 @@ impl IPLDNatsClient {
         }
 
         if self.buckets.contains(&name.to_string()) {
-            return Err(format!("Bucket {} already exists", name));
+            return Err(format!("Bucket {name} already exists"));
         }
 
         self.buckets.push(name.to_string());
@@ -111,7 +111,7 @@ impl IPLDNatsClient {
         }
 
         if !self.buckets.contains(&bucket.to_string()) {
-            return Err(format!("Bucket {} does not exist", bucket));
+            return Err(format!("Bucket {bucket} does not exist"));
         }
 
         self.stored_objects.push(StoredObject {
@@ -133,7 +133,7 @@ impl IPLDNatsClient {
             .iter()
             .find(|obj| obj.bucket == bucket && obj.key == key)
             .map(|obj| obj.data.clone())
-            .ok_or_else(|| format!("Object not found: {}/{}", bucket, key))
+            .ok_or_else(|| format!("Object not found: {bucket}/{key}"))
     }
 
     pub fn list_objects(&self, bucket: &str) -> Vec<(String, String)> {

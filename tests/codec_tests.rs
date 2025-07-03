@@ -149,7 +149,7 @@ async fn test_codec_with_compression() {
         id: "large".to_string(),
         value: 999,
         metadata: (0..1000)
-            .map(|i| (format!("key{}", i), "same_value".to_string()))
+            .map(|i| (format!("key{i}"), "same_value".to_string()))
             .collect(),
     };
 
@@ -161,8 +161,8 @@ async fn test_codec_with_compression() {
     let compressed = codec_compressed.encode(&large_data)
         .expect("Compressed encoding should succeed");
 
-    println!("Uncompressed size: {} bytes", uncompressed.len());
-    println!("Compressed size: {} bytes", compressed.len());
+    println!("Uncompressed size: {uncompressed.len(} bytes"));
+    println!("Compressed size: {compressed.len(} bytes"));
     println!("Compression ratio: {:.2}%",
         (compressed.len() as f64 / uncompressed.len() as f64) * 100.0);
 
@@ -239,7 +239,7 @@ async fn test_multiple_codec_registration() {
     let large_data = TestDataV2 {
         id: "large".to_string(),
         value: 2,
-        metadata: (0..100).map(|i| (format!("k{}", i), format!("v{}", i))).collect(),
+        metadata: (0..100).map(|i| (format!("k{i}"), format!("v{i}"))).collect(),
     };
 
     let binary_data = vec![0u8; 1024]; // 1KB of binary data
@@ -324,13 +324,13 @@ async fn test_codec_performance_characteristics() {
     let medium_data = TestDataV2 {
         id: "medium".to_string(),
         value: 100,
-        metadata: (0..100).map(|i| (format!("k{}", i), format!("value{}", i))).collect(),
+        metadata: (0..100).map(|i| (format!("k{i}"), format!("value{i}"))).collect(),
     };
 
     let large_data = TestDataV2 {
         id: "large".to_string(),
         value: 1000,
-        metadata: (0..10000).map(|i| (format!("key{}", i), "repeated_value".to_string())).collect(),
+        metadata: (0..10000).map(|i| (format!("key{i}"), "repeated_value".to_string())).collect(),
     };
 
     // Measure encoding performance
@@ -394,11 +394,10 @@ async fn test_codec_performance_characteristics() {
 
     // Size comparison
     println!("\nSize Comparison:");
-    println!("  Small JSON: {} bytes", small_encoded.len());
-    println!("  Medium JSON: {} bytes", medium_encoded.len());
-    println!("  Large JSON: {} bytes", large_encoded.len());
-    println!("  Large Compressed: {} bytes ({:.1}% of original)",
-        large_compressed.len(),
+    println!("  Small JSON: {small_encoded.len(} bytes"));
+    println!("  Medium JSON: {medium_encoded.len(} bytes"));
+    println!("  Large JSON: {large_encoded.len(} bytes"));
+    println!("  Large Compressed: {large_compressed.len(} bytes ({:.1}% of original)"),
         (large_compressed.len() as f64 / large_encoded.len() as f64) * 100.0);
 }
 
@@ -437,7 +436,7 @@ async fn test_codec_with_nested_structures() {
             NestedData {
                 level: depth,
                 data: vec![
-                    ("string".to_string(), Value::String(format!("Level {}", depth))),
+                    ("string".to_string(), Value::String(format!("Level {depth}"))),
                     ("number".to_string(), Value::Number(depth as i64)),
                     ("boolean".to_string(), Value::Boolean(depth % 2 == 0)),
                     ("array".to_string(), Value::Array(vec![

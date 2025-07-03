@@ -46,7 +46,7 @@ async fn test_content_deduplication() -> Result<()> {
     // When: Stored multiple times
     let mut cids = vec![];
     for i in 0..5 {
-        println!("Storing content attempt {}", i + 1);
+        println!("Storing content attempt {i + 1}");
         let cid = context.with_content(content.clone()).await?;
         cids.push(cid);
     }
@@ -55,7 +55,7 @@ async fn test_content_deduplication() -> Result<()> {
     let first_cid = &cids[0];
     for (i, cid) in cids.iter().enumerate() {
         assert_cids_equal(first_cid, cid);
-        println!("Store attempt {} resulted in CID: {}", i + 1, cid);
+        println!("Store attempt {i + 1} resulted in CID: {cid}");
     }
 
     // Verify content is stored only once
@@ -100,7 +100,7 @@ async fn test_dedup_across_buckets() -> Result<()> {
         let encoded = ContentCodec::encode(&content)?;
         let cid = store.put(&encoded).await?;
         bucket_cids.insert(bucket_name.clone(), cid);
-        println!("Stored in {} with CID: {}", bucket_name, cid);
+        println!("Stored in {bucket_name} with CID: {cid}");
     }
 
     // Then: CIDs should be identical across buckets
@@ -117,7 +117,7 @@ async fn test_dedup_across_buckets() -> Result<()> {
         let retrieved_bytes = store.get(&bucket_cids[bucket_name]).await?;
         let retrieved: TestContent = ContentCodec::decode(&retrieved_bytes)?;
         assert_content_equal(&content, &retrieved);
-        println!("Successfully retrieved from {}", bucket_name);
+        println!("Successfully retrieved from {bucket_name}");
     }
 
     Ok(())
@@ -194,11 +194,11 @@ async fn test_dedup_statistics() -> Result<()> {
 
         if cid_map.contains_key(&cid) {
             duplicate_stores += 1;
-            println!("Duplicate detected for {}: CID {}", id, cid);
+            println!("Duplicate detected for {id}: CID {cid}");
         } else {
             unique_content += 1;
             cid_map.insert(cid.clone(), id);
-            println!("New content stored for {}: CID {}", id, cid);
+            println!("New content stored for {id}: CID {cid}");
         }
     }
 
@@ -210,7 +210,7 @@ async fn test_dedup_statistics() -> Result<()> {
     for (cid, original_id) in &cid_map {
         let retrieved_bytes = context.storage.get(cid).await?;
         let _: TestContent = ContentCodec::decode(&retrieved_bytes)?;
-        println!("Retrieved content for original ID: {}", original_id);
+        println!("Retrieved content for original ID: {original_id}");
     }
 
     Ok(())
@@ -228,12 +228,12 @@ async fn test_large_content_deduplication() -> Result<()> {
     ];
 
     for size in sizes {
-        println!("Testing deduplication for {} bytes", size);
+        println!("Testing deduplication for {size} bytes");
 
         // Generate deterministic large content
         let large_data = vec![0x42u8; size]; // Fill with 'B'
         let content = TestContent {
-            id: format!("large-{}", size),
+            id: format!("large-{size}"),
             data: base64::encode(&large_data),
             value: size as u64,
         };
@@ -246,7 +246,7 @@ async fn test_large_content_deduplication() -> Result<()> {
             let duration = start.elapsed();
 
             cids.push(cid);
-            println!("  Attempt {}: CID {} (took {:?})", i + 1, cid, duration);
+            println!("  Attempt {i + 1}: CID {cid} (took {:?})", duration);
         }
 
         // All should be deduplicated
@@ -302,7 +302,7 @@ async fn test_concurrent_deduplication() -> Result<()> {
     let first_cid = &results[0].1;
     for (thread_id, cid) in &results {
         assert_cids_equal(first_cid, cid);
-        println!("Thread {} got CID: {}", thread_id, cid);
+        println!("Thread {thread_id} got CID: {cid}");
     }
 
     Ok(())
@@ -326,7 +326,7 @@ async fn test_dedup_with_compression() -> Result<()> {
     for i in 0..3 {
         let cid = context.with_content(content.clone()).await?;
         cids.push(cid);
-        println!("Store {} resulted in CID: {}", i + 1, cid);
+        println!("Store {i + 1} resulted in CID: {cid}");
     }
 
     // Verify deduplication

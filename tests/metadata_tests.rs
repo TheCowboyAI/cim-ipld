@@ -88,7 +88,7 @@ async fn test_metadata_storage_retrieval() -> Result<()> {
     // When: Stored and retrieved
     let encoded = ContentCodec::encode(&content_with_metadata)?;
     let cid = context.storage.put(&encoded).await?;
-    println!("Stored content with metadata: CID {}", cid);
+    println!("Stored content with metadata: CID {cid}");
 
     let retrieved_bytes = context.storage.get(&cid).await?;
     let retrieved: ContentWithMetadata = ContentCodec::decode(&retrieved_bytes)?;
@@ -150,7 +150,7 @@ async fn test_metadata_search() -> Result<()> {
         let cid = context.storage.put(&encoded).await?;
 
         stored_items.insert(cid, item);
-        println!("Stored {} with tags {:?} in {}", id, tags, env);
+        println!("Stored {id} with tags {:?} in {tags}", env);
     }
 
     // When: Search performed (simulated - real implementation would have search API)
@@ -219,7 +219,7 @@ async fn test_metadata_versioning() -> Result<()> {
     for version in 1..=3 {
         let content = TestContent {
             id: base_content.id.clone(),
-            data: format!("Content version {}", version),
+            data: format!("Content version {version}"),
             value: version as u64,
         };
 
@@ -231,14 +231,14 @@ async fn test_metadata_versioning() -> Result<()> {
                 let mut props = HashMap::new();
                 props.insert("previous_version".to_string(),
                     if version > 1 {
-                        format!("{}", version - 1)
+                        format!("{version - 1}")
                     } else {
                         "none".to_string()
                     }
                 );
                 props
             },
-            version: format!("{}.0.0", version),
+            version: format!("{version}.0.0"),
             content_type: "test/versioned".to_string(),
         };
 
@@ -247,7 +247,7 @@ async fn test_metadata_versioning() -> Result<()> {
         let cid = context.storage.put(&encoded).await?;
 
         version_cids.push((version, cid));
-        println!("Stored version {} with CID {}", version, cid);
+        println!("Stored version {version} with CID {cid}");
     }
 
     // Verify all versions are retrievable
@@ -255,7 +255,7 @@ async fn test_metadata_versioning() -> Result<()> {
         let retrieved_bytes = context.storage.get(cid).await?;
         let retrieved: ContentWithMetadata = ContentCodec::decode(&retrieved_bytes)?;
 
-        assert_eq!(retrieved.metadata.version, format!("{}.0.0", version));
+        assert_eq!(retrieved.metadata.version, format!("{version}.0.0"));
         assert_eq!(retrieved.content.value, *version as u64);
     }
 
@@ -277,14 +277,14 @@ async fn test_large_metadata() -> Result<()> {
     let mut large_properties = HashMap::new();
     for i in 0..1000 {
         large_properties.insert(
-            format!("property_{}", i),
-            format!("Value for property {} with some additional text to make it larger", i),
+            format!("property_{i}"),
+            format!("Value for property {i} with some additional text to make it larger"),
         );
     }
 
     let mut large_tags = vec![];
     for i in 0..100 {
-        large_tags.push(format!("tag_{}", i));
+        large_tags.push(format!("tag_{i}"));
     }
 
     let metadata = ContentMetadata {
@@ -300,7 +300,7 @@ async fn test_large_metadata() -> Result<()> {
 
     // Store and retrieve
     let encoded = ContentCodec::encode(&large_item)?;
-    println!("Encoded size with large metadata: {} bytes", encoded.len());
+    println!("Encoded size with large metadata: {encoded.len(} bytes"));
 
     let cid = context.storage.put(&encoded).await?;
     let retrieved_bytes = context.storage.get(&cid).await?;
@@ -337,7 +337,7 @@ async fn test_metadata_filtering() -> Result<()> {
     for (id, priority, env, tags) in items {
         let content = TestContent {
             id: id.to_string(),
-            data: format!("Content for {}", id),
+            data: format!("Content for {id}"),
             value: 1,
         };
 
@@ -413,7 +413,7 @@ async fn test_metadata_update_pattern() -> Result<()> {
     // Store original
     let encoded = ContentCodec::encode(&original)?;
     let original_cid = context.storage.put(&encoded).await?;
-    println!("Original CID: {}", original_cid);
+    println!("Original CID: {original_cid}");
 
     // Create updated version with new metadata
     let updated_metadata = ContentMetadata {
@@ -438,7 +438,7 @@ async fn test_metadata_update_pattern() -> Result<()> {
     // Store updated version
     let encoded = ContentCodec::encode(&updated)?;
     let updated_cid = context.storage.put(&encoded).await?;
-    println!("Updated CID: {}", updated_cid);
+    println!("Updated CID: {updated_cid}");
 
     // CIDs should be different (different metadata)
     assert_ne!(original_cid, updated_cid, "Different metadata should produce different CIDs");

@@ -428,7 +428,7 @@ async fn test_backend_performance_characteristics() {
     // Measure S3 fast backend
     let start = Instant::now();
     for i in 0..10 {
-        fast_s3.put(&format!("perf/fast/{}", i), test_data.clone()).await
+        fast_s3.put(&format!("perf/fast/{i}"), test_data.clone()).await
             .expect("Fast S3 PUT should succeed");
     }
     let fast_duration = start.elapsed();
@@ -436,7 +436,7 @@ async fn test_backend_performance_characteristics() {
     // Measure S3 slow backend
     let start = Instant::now();
     for i in 0..10 {
-        slow_s3.put(&format!("perf/slow/{}", i), test_data.clone()).await
+        slow_s3.put(&format!("perf/slow/{i}"), test_data.clone()).await
             .expect("Slow S3 PUT should succeed");
     }
     let slow_duration = start.elapsed();
@@ -444,7 +444,7 @@ async fn test_backend_performance_characteristics() {
     // Measure filesystem backend
     let start = Instant::now();
     for i in 0..10 {
-        fs_backend.put(&format!("perf/fs/{}", i), test_data.clone()).await
+        fs_backend.put(&format!("perf/fs/{i}"), test_data.clone()).await
             .expect("Filesystem PUT should succeed");
     }
     let fs_duration = start.elapsed();

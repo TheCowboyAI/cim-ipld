@@ -486,7 +486,7 @@ async fn test_high_throughput_scenario() {
             // Write phase
             for op in 0..operations_per_client {
                 let content = TestContent {
-                    data: format!("Client {} operation {}", client_id, op).into_bytes(),
+                    data: format!("Client {client_id} operation {op}").into_bytes(),
                     metadata: vec![
                         ("client_id".to_string(), client_id.to_string()),
                         ("operation".to_string(), op.to_string()),
@@ -501,7 +501,7 @@ async fn test_high_throughput_scenario() {
                         cids.push(cid);
                     }
                     Err(e) => {
-                        eprintln!("Write error for client {}: {}", client_id, e);
+                        eprintln!("Write error for client {client_id}: {e}");
                     }
                 }
             }
@@ -515,7 +515,7 @@ async fn test_high_throughput_scenario() {
                         read_times_clone.write().await.push(duration);
                     }
                     Err(e) => {
-                        eprintln!("Read error for client {}: {}", client_id, e);
+                        eprintln!("Read error for client {client_id}: {e}");
                     }
                 }
             }
@@ -543,7 +543,7 @@ async fn test_high_throughput_scenario() {
         let max_write = write_durations.iter().max().unwrap();
 
         println!("Write Performance:");
-        println!("  Total writes: {}", write_durations.len());
+        println!("  Total writes: {write_durations.len(}"));
         println!("  Average write time: {:?}", avg_write);
         println!("  Max write time: {:?}", max_write);
 
@@ -557,7 +557,7 @@ async fn test_high_throughput_scenario() {
         let max_read = read_durations.iter().max().unwrap();
 
         println!("Read Performance:");
-        println!("  Total reads: {}", read_durations.len());
+        println!("  Total reads: {read_durations.len(}"));
         println!("  Average read time: {:?}", avg_read);
         println!("  Max read time: {:?}", max_read);
 
@@ -592,7 +592,7 @@ async fn test_backup_restore_workflow() {
 
         for j in 0..10 {
             let content = TestContent {
-                data: format!("Chain {} Item {}", i, j).into_bytes(),
+                data: format!("Chain {i} Item {j}").into_bytes(),
                 metadata: vec![
                     ("chain_id".to_string(), i.to_string()),
                     ("item_id".to_string(), j.to_string()),
@@ -602,12 +602,12 @@ async fn test_backup_restore_workflow() {
             let cid = context.storage.put(&content).await
                 .expect("Content storage should succeed");
 
-            original_cids.insert(format!("{}_{}", i, j), cid);
+            original_cids.insert(format!("{i}_{j}"), cid);
 
             let chained = ChainedContent {
                 content,
                 previous_cid: if j > 0 {
-                    Some(original_cids[&format!("{}_{}", i, j-1)])
+                    Some(original_cids[&format!("{i}_{j-1}")])
                 } else {
                     None
                 },
@@ -661,7 +661,7 @@ async fn test_backup_restore_workflow() {
             .expect("CID parsing should succeed");
 
         let _content: TestContent = context.storage.get(&cid).await
-            .expect(&format!("Content {} should be retrievable", key));
+            .expect(&format!("Content {key} should be retrievable"));
 
         verified_count += 1;
     }

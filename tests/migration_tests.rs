@@ -61,11 +61,11 @@ impl MockPostgresSource {
         // Add test data
         for i in 0..100 {
             let record = DatabaseRecord {
-                id: format!("pg_{}", i),
+                id: format!("pg_{i}"),
                 data: serde_json::json!({
-                    "name": format!("Record {}", i),
+                    "name": format!("Record {i}"),
                     "value": i * 10,
-                    "tags": vec!["postgres", "test", format!("batch_{}", i / 10)]
+                    "tags": vec!["postgres", "test", format!("batch_{i / 10}")]
                 }),
                 created_at: "2024-01-01T00:00:00Z".to_string(),
                 updated_at: "2024-01-02T00:00:00Z".to_string(),
@@ -110,9 +110,9 @@ impl MockMongoSource {
         // Add test collections
         let users: Vec<serde_json::Value> = (0..50)
             .map(|i| serde_json::json!({
-                "_id": format!("user_{}", i),
-                "username": format!("user{}", i),
-                "email": format!("user{}@example.com", i),
+                "_id": format!("user_{i}"),
+                "username": format!("user{i}"),
+                "email": format!("user{i}@example.com"),
                 "profile": {
                     "age": 20 + i,
                     "interests": vec!["coding", "testing"]
@@ -122,11 +122,11 @@ impl MockMongoSource {
 
         let posts: Vec<serde_json::Value> = (0..200)
             .map(|i| serde_json::json!({
-                "_id": format!("post_{}", i),
-                "author": format!("user_{}", i % 50),
-                "title": format!("Post Title {}", i),
-                "content": format!("This is post content number {}", i),
-                "tags": vec!["test", format!("category_{}", i % 5)]
+                "_id": format!("post_{i}"),
+                "author": format!("user_{i % 50}"),
+                "title": format!("Post Title {i}"),
+                "content": format!("This is post content number {i}"),
+                "tags": vec!["test", format!("category_{i % 5}")]
             }))
             .collect();
 
@@ -163,8 +163,8 @@ impl MockIpfsSource {
 
         // Add test IPFS objects
         for i in 0..50 {
-            let cid = format!("Qm{}", base64::encode(format!("test_{}", i)));
-            let content = format!("IPFS content {}", i).into_bytes();
+            let cid = format!("Qm{base64::encode(format!("test_{}", i}")));
+            let content = format!("IPFS content {i}").into_bytes();
             objects.insert(cid.clone(), content);
 
             if i % 2 == 0 {
@@ -522,7 +522,7 @@ async fn test_migration_with_transformation() {
     for legacy in legacy_data {
         // Transform to new format
         let new_format = NewFormat {
-            id: format!("new_{}", legacy.id),
+            id: format!("new_{legacy.id}"),
             display_name: legacy.name.to_uppercase(),
             content: serde_json::from_str(&legacy.data).unwrap_or(serde_json::Value::Null),
             version: "2.0".to_string(),
@@ -547,7 +547,7 @@ async fn test_migration_with_transformation() {
         let retrieved_data: NewFormat = serde_json::from_slice(&retrieved.data)
             .expect("Deserialization should succeed");
 
-        assert_eq!(retrieved_data.id, format!("new_{}", legacy.id));
+        assert_eq!(retrieved_data.id, format!("new_{legacy.id}"));
         assert_eq!(retrieved_data.display_name, legacy.name.to_uppercase());
         assert_eq!(retrieved_data.version, "2.0");
 
@@ -612,12 +612,12 @@ async fn test_migration_error_handling() {
                         success_count += 1;
                     }
                     Err(e) => {
-                        error_log.push(format!("Failed to store record {}: {}", index, e));
+                        error_log.push(format!("Failed to store record {index}: {e}"));
                     }
                 }
             }
             Err(error_msg) => {
-                error_log.push(format!("Invalid record at index {}: {}", index, error_msg));
+                error_log.push(format!("Invalid record at index {index}: {error_msg}"));
             }
         }
     }

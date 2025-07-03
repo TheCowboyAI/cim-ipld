@@ -522,7 +522,7 @@ impl NatsObjectStore {
         F: FnOnce(&mut PartitionStrategy),
     {
         let mut strategy = self.partition_strategy.write().await;
-        updater(&mut *strategy);
+        updater(&mut strategy);
     }
 
     /// Get object info

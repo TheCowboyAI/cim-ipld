@@ -404,7 +404,7 @@ impl PartitionStrategy {
         
         // Priority 4: File extension
         if let Some(name) = filename {
-            if let Some(ext) = name.split('.').last() {
+            if let Some(ext) = name.split('.').next_back() {
                 if let Some(domain) = self.extension_mapping.get(&ext.to_lowercase()) {
                     return *domain;
                 }

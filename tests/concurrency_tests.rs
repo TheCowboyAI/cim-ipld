@@ -85,7 +85,7 @@ async fn test_concurrent_writes_same_cid() -> Result<()> {
     for (writer_id, result) in results {
         match result {
             Ok(cid) => {
-                println!("Writer {} got CID: {}", writer_id, cid);
+                println!("Writer {writer_id} got CID: {cid}");
                 cids.push(cid);
             }
             Err(e) => {
@@ -162,7 +162,7 @@ async fn test_cache_race_conditions() -> Result<()> {
     for (reader_id, result, duration) in results {
         match result {
             Ok(retrieved) => {
-                println!("Reader {} succeeded in {:?}", reader_id, duration);
+                println!("Reader {reader_id} succeeded in {:?}", duration);
 
                 // Verify content integrity
                 assert_content_equal(&content, &retrieved);
@@ -213,8 +213,8 @@ async fn test_chain_concurrent_append() -> Result<()> {
 
             // Create unique content
             let content = TestContent {
-                id: format!("concurrent-append-{}", i),
-                data: format!("Concurrent data from appender {}", i),
+                id: format!("concurrent-append-{i}"),
+                data: format!("Concurrent data from appender {i}"),
                 value: (i + 1) as u64,
             };
 
@@ -239,7 +239,7 @@ async fn test_chain_concurrent_append() -> Result<()> {
     for (appender_id, _content, result) in &results {
         match result {
             Ok(()) => {
-                println!("Appender {} succeeded", appender_id);
+                println!("Appender {appender_id} succeeded");
             }
             Err(e) => {
                 panic!("Appender {} failed: {}", appender_id, e);
@@ -267,7 +267,7 @@ async fn test_chain_concurrent_append() -> Result<()> {
     println!("Final chain order:");
     for (i, item) in items.iter().enumerate() {
         let content: TestContent = context.storage.get(&item.content_cid).await?;
-        println!("  Position {}: {}", i, content.id);
+        println!("  Position {i}: {content.id}");
     }
 
     Ok(())
@@ -284,8 +284,8 @@ async fn test_concurrent_chain_validation() -> Result<()> {
     // Add many items
     for i in 0..50 {
         let content = TestContent {
-            id: format!("validation-{}", i),
-            data: format!("Data for validation {}", i),
+            id: format!("validation-{i}"),
+            data: format!("Data for validation {i}"),
             value: i as u64,
         };
         chain.append(content, &*context.storage).await?;
@@ -322,7 +322,7 @@ async fn test_concurrent_chain_validation() -> Result<()> {
             "Validator {} failed validation",
             validator_id
         );
-        println!("Validator {} completed in {:?}", validator_id, duration);
+        println!("Validator {validator_id} completed in {:?}", duration);
     }
 
     Ok(())
@@ -342,8 +342,8 @@ async fn test_concurrent_different_content_writes() -> Result<()> {
 
         let handle = tokio::spawn(async move {
             let content = TestContent {
-                id: format!("writer-{}", i),
-                data: format!("Unique content from writer {}: {}", i, uuid::Uuid::new_v4()),
+                id: format!("writer-{i}"),
+                data: format!("Unique content from writer {i}: {uuid::Uuid::new_v4(}")),
                 value: i as u64,
             };
 
@@ -394,8 +394,8 @@ async fn test_stress_concurrent_operations() -> Result<()> {
     let mut existing_cids = vec![];
     for i in 0..10 {
         let content = TestContent {
-            id: format!("pre-existing-{}", i),
-            data: format!("Pre-existing content {}", i),
+            id: format!("pre-existing-{i}"),
+            data: format!("Pre-existing content {i}"),
             value: i as u64,
         };
         let cid = context.with_content(content).await?;
@@ -426,8 +426,8 @@ async fn test_stress_concurrent_operations() -> Result<()> {
                 1 => {
                     // Write operation
                     let content = TestContent {
-                        id: format!("stress-write-{}", i),
-                        data: format!("Stress test content {}", i),
+                        id: format!("stress-write-{i}"),
+                        data: format!("Stress test content {i}"),
                         value: i as u64,
                     };
                     let result = context_clone.with_content(content).await;
@@ -436,8 +436,8 @@ async fn test_stress_concurrent_operations() -> Result<()> {
                 2 => {
                     // Chain append operation
                     let content = TestContent {
-                        id: format!("stress-chain-{}", i),
-                        data: format!("Chain stress content {}", i),
+                        id: format!("stress-chain-{i}"),
+                        data: format!("Chain stress content {i}"),
                         value: i as u64,
                     };
                     let mut chain_write = chain_clone.write().await;
@@ -467,14 +467,14 @@ async fn test_stress_concurrent_operations() -> Result<()> {
         if success {
             *success_counts.entry(op_type).or_insert(0) += 1;
         } else {
-            println!("Operation {} ({}) failed", op_id, op_type);
+            println!("Operation {op_id} ({op_type}) failed");
         }
     }
 
     // Print statistics
     println!("Stress test results:");
     for (op_type, count) in success_counts {
-        println!("  {}: {} successful operations", op_type, count);
+        println!("  {op_type}: {count} successful operations");
     }
 
     // Final chain validation

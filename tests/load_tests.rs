@@ -107,11 +107,9 @@ impl PerformanceMetrics {
 
         println!("\n=== Performance Summary ===");
         println!("Duration: {:?}", duration);
-        println!("Total operations: {}", total_ops);
-        println!("Successful: {} ({:.2}%)", successful_ops,
-            (successful_ops as f64 / total_ops as f64) * 100.0);
-        println!("Failed: {} ({:.2}%)", failed_ops,
-            (failed_ops as f64 / total_ops as f64) * 100.0);
+        println!("Total operations: {total_ops}");
+        println!("Successful: {successful_ops} ({:.2}%)", (successful_ops as f64 / total_ops as f64) * 100.0);
+        println!("Failed: {failed_ops} ({:.2}%)", (failed_ops as f64 / total_ops as f64) * 100.0);
         println!("Throughput: {:.2} ops/sec", total_ops as f64 / duration.as_secs_f64());
         println!("Data written: {:.2} MB", bytes_written as f64 / 1_048_576.0);
         println!("Data read: {:.2} MB", bytes_read as f64 / 1_048_576.0);
@@ -203,7 +201,7 @@ async fn test_write_throughput() {
     let ops_per_second = total_ops as f64 / total_duration.as_secs_f64();
 
     println!("\nWorker statistics:");
-    println!("  Workers: {}", num_workers);
+    println!("  Workers: {num_workers}");
     println!("  Avg ops/worker: {:.2}",
         operations_per_worker.iter().sum::<usize>() as f64 / num_workers as f64);
 
@@ -245,7 +243,7 @@ async fn test_read_throughput() {
         test_cids.push((cid, size));
     }
 
-    println!("Starting read throughput test with {} items...", test_cids.len());
+    println!("Starting read throughput test with {test_cids.len(} items..."));
 
     let test_cids = Arc::new(test_cids);
     let num_workers = 100;
@@ -408,10 +406,8 @@ async fn test_mixed_workload() {
     let total_count = write_count + read_count;
 
     println!("\nWorkload distribution:");
-    println!("  Writes: {} ({:.2}%)", write_count,
-        (write_count as f64 / total_count as f64) * 100.0);
-    println!("  Reads: {} ({:.2}%)", read_count,
-        (read_count as f64 / total_count as f64) * 100.0);
+    println!("  Writes: {write_count} ({:.2}%)", (write_count as f64 / total_count as f64) * 100.0);
+    println!("  Reads: {read_count} ({:.2}%)", (read_count as f64 / total_count as f64) * 100.0);
 }
 
 #[tokio::test]
@@ -434,7 +430,7 @@ async fn test_large_scale_storage() {
     // Semaphore to limit concurrent operations
     let semaphore = Arc::new(Semaphore::new(num_workers));
 
-    println!("Starting large-scale storage test: {} objects", target_objects);
+    println!("Starting large-scale storage test: {target_objects} objects");
 
     let mut batch_times = Vec::new();
     let start_time = Instant::now();
@@ -452,7 +448,7 @@ async fn test_large_scale_storage() {
                 let _permit = semaphore_clone.acquire().await.unwrap();
 
                 let content = TestContent {
-                    data: format!("Object {}", object_id).into_bytes(),
+                    data: format!("Object {object_id}").into_bytes(),
                     metadata: vec![
                         ("object_id".to_string(), object_id.to_string()),
                         ("batch".to_string(), batch_num.to_string()),
@@ -472,8 +468,7 @@ async fn test_large_scale_storage() {
         let batch_duration = batch_start.elapsed();
         batch_times.push(batch_duration);
 
-        println!("Batch {}: {} objects in {:?} ({} successful)",
-            batch_num, batch_size, batch_duration, successful);
+        println!("Batch {batch_num}: {batch_size} objects in {:?} ({batch_duration} successful)", successful);
 
         // Check for performance degradation
         if batch_num > 0 {
@@ -491,7 +486,7 @@ async fn test_large_scale_storage() {
     let avg_batch_time = batch_times.iter().sum::<Duration>() / batch_times.len() as u32;
 
     println!("\n=== Large Scale Storage Summary ===");
-    println!("Total objects: {}", target_objects);
+    println!("Total objects: {target_objects}");
     println!("Total duration: {:?}", total_duration);
     println!("Average batch time: {:?}", avg_batch_time);
     println!("Objects per second: {:.2}",
@@ -569,7 +564,7 @@ async fn test_burst_traffic() {
             }
 
             burst_count += 1;
-            println!("Starting burst #{} at {:?}", burst_count, start_time.elapsed());
+            println!("Starting burst #{burst_count} at {:?}", start_time.elapsed());
 
             // Create burst workers
             let burst_start = Instant::now();
@@ -603,7 +598,7 @@ async fn test_burst_traffic() {
 
             // Wait for burst to complete
             futures::future::join_all(burst_handles).await;
-            println!("Burst #{} completed", burst_count);
+            println!("Burst #{burst_count} completed");
         }
 
         burst_count
@@ -617,9 +612,9 @@ async fn test_burst_traffic() {
     metrics.print_summary(total_duration).await;
 
     println!("\nBurst traffic summary:");
-    println!("  Total bursts: {}", burst_count);
-    println!("  Burst workers: {}", burst_workers);
-    println!("  Normal workers: {}", normal_workers);
+    println!("  Total bursts: {burst_count}");
+    println!("  Burst workers: {burst_workers}");
+    println!("  Normal workers: {normal_workers}");
 
     // Verify system handled bursts
     let failure_rate = metrics.failed_operations.load(Ordering::Relaxed) as f64 /

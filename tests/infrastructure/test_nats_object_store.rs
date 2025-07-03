@@ -67,9 +67,7 @@ impl IPLDEventStreamValidator {
 
     pub fn validate(&self) -> Result<(), String> {
         if self.captured_events.len() != self.expected_events.len() {
-            return Err(format!(
-                "Event count mismatch: expected {}, got {}",
-                self.expected_events.len(),
+            return Err(format!("Event count mismatch: expected {self.expected_events.len(}, got {}"),
                 self.captured_events.len()
             ));
         }
@@ -79,10 +77,7 @@ impl IPLDEventStreamValidator {
             .enumerate()
         {
             if expected != actual {
-                return Err(format!(
-                    "Event mismatch at position {}: expected {:?}, got {:?}",
-                    i, expected, actual
-                ));
+                return Err(format!("Event mismatch at position {i}: expected {:?}, got {:?}", expected, actual));
             }
         }
 
@@ -123,7 +118,7 @@ impl MockIPLDObjectStore {
         }
         
         if self.buckets.contains_key(&bucket_name) {
-            return Err(format!("Bucket {} already exists", bucket_name));
+            return Err(format!("Bucket {bucket_name} already exists"));
         }
         
         self.buckets.insert(bucket_name, Vec::new());
@@ -141,7 +136,7 @@ impl MockIPLDObjectStore {
         }
         
         let bucket = self.buckets.get_mut(bucket_name)
-            .ok_or_else(|| format!("Bucket {} not found", bucket_name))?;
+            .ok_or_else(|| format!("Bucket {bucket_name} not found"))?;
         
         let size = data.len();
         bucket.push((cid, data));
@@ -162,7 +157,7 @@ impl MockIPLDObjectStore {
         }
         
         let bucket = self.buckets.get(bucket_name)
-            .ok_or_else(|| format!("Bucket {} not found", bucket_name))?;
+            .ok_or_else(|| format!("Bucket {bucket_name} not found"))?;
         
         for (stored_cid, data) in bucket {
             if stored_cid == cid {
@@ -170,7 +165,7 @@ impl MockIPLDObjectStore {
             }
         }
         
-        Err(format!("Object with CID {} not found", cid))
+        Err(format!("Object with CID {cid} not found"))
     }
 
     pub fn list_buckets(&self) -> Vec<String> {

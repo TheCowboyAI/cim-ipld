@@ -90,7 +90,7 @@ async fn test_object_storage_event_flow() {
     
     // Event sequence validation
     println!("✅ ObjectCreated event");
-    println!("✅ CIDCalculated event: {}", cid);
+    println!("✅ CIDCalculated event: {cid}");
     println!("✅ ObjectStored event");
 }
 
@@ -123,7 +123,7 @@ async fn test_cid_chain_creation() {
         // Create event with previous CID
         let event = TestStorageEvent {
             event_id: Uuid::new_v4().to_string(),
-            event_type: format!("ChainEvent{}", i),
+            event_type: format!("ChainEvent{i}"),
             object_cid: None,
             previous_cid: previous_cid.as_ref().map(|c| c.to_string()),
             timestamp: SystemTime::now()
@@ -132,7 +132,7 @@ async fn test_cid_chain_creation() {
                 .as_secs(),
             payload: json!({
                 "sequence": i,
-                "data": format!("event-{}", i)
+                "data": format!("event-{i}")
             }),
         };
         
@@ -158,7 +158,7 @@ async fn test_cid_chain_creation() {
     
     // Then: Chain is valid
     assert!(chain_valid);
-    println!("✅ CID chain validated with {} events", events.len());
+    println!("✅ CID chain validated with {events.len(} events"));
 }
 
 /// Event Flow Test: Content Type Detection
@@ -278,10 +278,10 @@ async fn test_content_chain_events() {
     assert_eq!(items[1].previous_cid, Some(cid1.clone()));
     assert_eq!(items[2].previous_cid, Some(cid2.clone()));
     
-    println!("✅ ContentAdded event (1): {}", cid1);
-    println!("✅ ContentAdded event (2): {}", cid2);
-    println!("✅ ContentAdded event (3): {}", cid3);
-    println!("✅ ChainBuilt event with {} items", chain.len());
+    println!("✅ ContentAdded event (1): {cid1}");
+    println!("✅ ContentAdded event (2): {cid2}");
+    println!("✅ ContentAdded event (3): {cid3}");
+    println!("✅ ChainBuilt event with {chain.len(} items"));
 }
 
 /// Event Flow Test: Error Handling
@@ -314,10 +314,10 @@ async fn test_error_handling_events() {
     match result {
         Ok(encoded) => {
             println!("✅ ObjectValidated event");
-            println!("✅ ObjectEncoded event: {} bytes", encoded.len());
+            println!("✅ ObjectEncoded event: {encoded.len(} bytes"));
         }
         Err(e) => {
-            println!("✅ ValidationError event: {}", e);
+            println!("✅ ValidationError event: {e}");
             println!("✅ ErrorHandled event");
         }
     }
@@ -352,7 +352,7 @@ async fn test_full_storage_flow_integration() {
     let jetstream = jetstream::new(client);
     
     // Create bucket for testing
-    let bucket_name = format!("test-ipld-{}", Uuid::new_v4());
+    let bucket_name = format!("test-ipld-{Uuid::new_v4(}"));
     let bucket = jetstream.create_object_store(jetstream::object_store::Config {
         bucket: bucket_name.clone(),
         ..Default::default()
@@ -396,7 +396,7 @@ async fn test_full_storage_flow_integration() {
     assert_eq!(decoded["type"], "IntegrationTest");
     
     println!("✅ Full storage flow completed");
-    println!("✅ Object stored with CID: {}", cid);
+    println!("✅ Object stored with CID: {cid}");
     
     // Cleanup
     jetstream.delete_object_store(&bucket_name).await.ok();

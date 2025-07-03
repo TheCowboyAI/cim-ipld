@@ -24,7 +24,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Connect to NATS
     let nats_url = std::env::var("NATS_URL").unwrap_or_else(|_| "nats://localhost:4222".to_string());
-    println!("Connecting to NATS at {}", nats_url);
+    println!("Connecting to NATS at {nats_url}");
     
     let client = async_nats::connect(&nats_url).await?;
     let jetstream = async_nats::jetstream::new(client);
@@ -43,7 +43,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     
     // Add lifecycle hooks
     service.add_post_store_hook(|cid, content_type| {
-        println!("✓ Stored content: {} (type: {:?})", cid, content_type);
+        println!("✓ Stored content: {cid} (type: {:?})", content_type);
     }).await;
     
     // Demo 1: Store documents with metadata
@@ -81,9 +81,9 @@ let result = service.store_document(data, metadata, "markdown").await?;
     ).await?;
     
     println!("Markdown document stored:");
-    println!("  CID: {}", md_result.cid);
-    println!("  Size: {} bytes", md_result.size);
-    println!("  Deduplicated: {}", md_result.deduplicated);
+    println!("  CID: {md_result.cid}");
+    println!("  Size: {md_result.size} bytes");
+    println!("  Deduplicated: {md_result.deduplicated}");
     
     // Store a text document
     let txt_content = "This is a plain text document for testing the content service.";
@@ -100,8 +100,8 @@ let result = service.store_document(data, metadata, "markdown").await?;
     ).await?;
     
     println!("\nText document stored:");
-    println!("  CID: {}", txt_result.cid);
-    println!("  Size: {} bytes", txt_result.size);
+    println!("  CID: {txt_result.cid}");
+    println!("  Size: {txt_result.size} bytes");
     
     // Demo 2: Store images with metadata
     println!("\n\n2. Storing Images");
@@ -132,7 +132,7 @@ let result = service.store_document(data, metadata, "markdown").await?;
     let img_result = service.store_image(png_data, img_metadata, "png").await?;
     
     println!("Image stored:");
-    println!("  CID: {}", img_result.cid);
+    println!("  CID: {img_result.cid}");
     println!("  Type: {:?}", img_result.content_type);
     
     // Demo 3: Search functionality
@@ -146,11 +146,11 @@ let result = service.store_document(data, metadata, "markdown").await?;
     };
     
     let text_results = service.search(text_query).await?;
-    println!("\nSearch for 'documentation': {} results", text_results.len());
+    println!("\nSearch for 'documentation': {text_results.len(} results"));
     for result in text_results.iter().take(3) {
-        println!("  - CID: {}, Score: {:.2}", result.cid, result.score);
+        println!("  - CID: {result.cid}, Score: {:.2}", result.score);
         if let Some(title) = &result.metadata.title {
-            println!("    Title: {}", title);
+            println!("    Title: {title}");
         }
     }
     
@@ -161,9 +161,9 @@ let result = service.store_document(data, metadata, "markdown").await?;
     };
     
     let tag_results = service.search(tag_query).await?;
-    println!("\nSearch for tag 'test': {} results", tag_results.len());
+    println!("\nSearch for tag 'test': {tag_results.len(} results"));
     for result in tag_results.iter().take(3) {
-        println!("  - CID: {}, Tags: {:?}", result.cid, result.metadata.tags);
+        println!("  - CID: {result.cid}, Tags: {:?}", result.metadata.tags);
     }
     
     // Demo 4: Content statistics
@@ -171,10 +171,10 @@ let result = service.store_document(data, metadata, "markdown").await?;
     println!("---------------------");
     
     let stats = service.stats().await;
-    println!("Total documents: {}", stats.total_documents);
-    println!("Total images: {}", stats.total_images);
-    println!("Unique words indexed: {}", stats.unique_words);
-    println!("Unique tags: {}", stats.unique_tags);
+    println!("Total documents: {stats.total_documents}");
+    println!("Total images: {stats.total_images}");
+    println!("Unique words indexed: {stats.unique_words}");
+    println!("Unique tags: {stats.unique_tags}");
     
     // Demo 5: Batch operations
     println!("\n\n5. Batch Operations");
@@ -184,10 +184,10 @@ let result = service.store_document(data, metadata, "markdown").await?;
     
     let batch_items: Vec<TextDocument> = (0..5)
         .map(|i| {
-            let content = format!("Batch document #{}", i);
+            let content = format!("Batch document #{i}");
             let metadata = DocumentMetadata {
-                title: Some(format!("Batch Doc {}", i)),
-                tags: vec!["batch".to_string(), format!("doc-{}", i)],
+                title: Some(format!("Batch Doc {i}")),
+                tags: vec!["batch".to_string(), format!("doc-{i}")],
                 ..Default::default()
             };
             TextDocument::new(content, metadata).unwrap()
@@ -197,12 +197,11 @@ let result = service.store_document(data, metadata, "markdown").await?;
     let batch_result = service.batch_store(batch_items).await;
     
     println!("Batch store results:");
-    println!("  Successful: {}", batch_result.successful.len());
-    println!("  Failed: {}", batch_result.failed.len());
+    println!("  Successful: {batch_result.successful.len(}"));
+    println!("  Failed: {batch_result.failed.len(}"));
     
     for (i, result) in batch_result.successful.iter().enumerate() {
-        println!("  [{}] CID: {}, Deduplicated: {}", 
-            i, result.cid, result.deduplicated);
+        println!("  [{i}] CID: {result.cid}, Deduplicated: {result.deduplicated}");
     }
     
     // Demo 6: Content retrieval
@@ -215,12 +214,11 @@ let result = service.store_document(data, metadata, "markdown").await?;
         service.retrieve(&md_result.cid).await?;
     
     println!("Retrieved document:");
-    println!("  CID: {}", retrieved.cid);
+    println!("  CID: {retrieved.cid}");
     if let Some(title) = &retrieved.content.metadata.title {
-        println!("  Title: {}", title);
+        println!("  Title: {title}");
     }
-    println!("  Content preview: {}...", 
-        &retrieved.content.content[..50.min(retrieved.content.content.len())]);
+    println!("  Content preview: {&retrieved.content.content[..50.min(retrieved.content.content.len(}..."))]);
     
     // Demo 7: List by type
     println!("\n\n7. List Content by Type");
@@ -238,9 +236,9 @@ let result = service.store_document(data, metadata, "markdown").await?;
         list_options.clone()
     ).await?;
     
-    println!("Text documents: {} found", text_cids.len());
+    println!("Text documents: {text_cids.len(} found"));
     for (i, cid) in text_cids.iter().take(3).enumerate() {
-        println!("  [{}] {}", i, cid);
+        println!("  [{i}] {cid}");
     }
     
     // Demo complete
@@ -261,12 +259,12 @@ async fn demonstrate_error_handling(service: &ContentService) {
     
     match service.store_document(oversized, metadata, "text").await {
         Ok(_) => println!("Unexpected success"),
-        Err(e) => println!("✓ Correctly rejected oversized content: {}", e),
+        Err(e) => println!("✓ Correctly rejected oversized content: {e}"),
     }
     
     // Try to store with invalid format
     match service.store_document(vec![1, 2, 3], DocumentMetadata::default(), "invalid").await {
         Ok(_) => println!("Unexpected success"),
-        Err(e) => println!("✓ Correctly rejected invalid format: {}", e),
+        Err(e) => println!("✓ Correctly rejected invalid format: {e}"),
     }
 } 

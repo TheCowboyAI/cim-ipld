@@ -44,7 +44,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         None,
     ).await?;
 
-    println!("  - CID: {}", music_cid);
+    println!("  - CID: {music_cid}");
     println!("  - Domain: {:?}", music_domain);
     println!("  - Bucket: cim-media-music\n");
 
@@ -71,7 +71,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         None,
     ).await?;
 
-    println!("  - CID: {}", contract_cid);
+    println!("  - CID: {contract_cid}");
     println!("  - Domain: {:?}", contract_domain);
     println!("  - Bucket: cim-legal-contracts\n");
 
@@ -105,7 +105,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         Some(&invoice_metadata),
     ).await?;
 
-    println!("  - CID: {}", invoice_cid);
+    println!("  - CID: {invoice_cid}");
     println!("  - Domain: {:?}", invoice_domain);
     println!("  - Bucket: cim-finance-invoices\n");
 
@@ -142,7 +142,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         Some(&meme_metadata),
     ).await?;
 
-    println!("  - CID: {}", meme_cid);
+    println!("  - CID: {meme_cid}");
     println!("  - Domain: {:?}", meme_domain);
     println!("  - Bucket: cim-social-memes\n");
 
@@ -177,7 +177,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         Some(&medical_metadata),
     ).await?;
 
-    println!("  - CID: {}", medical_cid);
+    println!("  - CID: {medical_cid}");
     println!("  - Domain: {:?}", medical_domain);
     println!("  - Bucket: cim-health-medical\n");
 
@@ -204,7 +204,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         None,
     ).await?;
 
-    println!("  - CID: {}", code_cid);
+    println!("  - CID: {code_cid}");
     println!("  - Domain: {:?}", code_domain);
     println!("  - Bucket: cim-tech-code\n");
 
@@ -248,7 +248,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         None,
     ).await?;
 
-    println!("  - CID: {}", research_cid);
+    println!("  - CID: {research_cid}");
     println!("  - Domain: {:?}", research_domain);
     println!("  - Bucket: cim-academic-papers\n");
 
@@ -256,38 +256,36 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("8. Listing domain bucket contents:");
     
     let music_objects = store.list_domain(ContentDomain::Music).await?;
-    println!("  - Music bucket ({} objects)", music_objects.len());
+    println!("  - Music bucket ({music_objects.len(} objects)"));
     
     let contract_objects = store.list_domain(ContentDomain::Contracts).await?;
-    println!("  - Contracts bucket ({} objects)", contract_objects.len());
+    println!("  - Contracts bucket ({contract_objects.len(} objects)"));
     
     let invoice_objects = store.list_domain(ContentDomain::Invoices).await?;
-    println!("  - Invoices bucket ({} objects)", invoice_objects.len());
+    println!("  - Invoices bucket ({invoice_objects.len(} objects)"));
     
     let meme_objects = store.list_domain(ContentDomain::Memes).await?;
-    println!("  - Memes bucket ({} objects)", meme_objects.len());
+    println!("  - Memes bucket ({meme_objects.len(} objects)"));
     
     let medical_objects = store.list_domain(ContentDomain::Medical).await?;
-    println!("  - Medical bucket ({} objects)", medical_objects.len());
+    println!("  - Medical bucket ({medical_objects.len(} objects)"));
     
     let code_objects = store.list_domain(ContentDomain::SourceCode).await?;
-    println!("  - Source Code bucket ({} objects)", code_objects.len());
+    println!("  - Source Code bucket ({code_objects.len(} objects)"));
     
     let paper_objects = store.list_domain(ContentDomain::Papers).await?;
-    println!("  - Papers bucket ({} objects)", paper_objects.len());
+    println!("  - Papers bucket ({paper_objects.len(} objects)"));
 
     // Retrieve content from domain buckets
     println!("\n9. Retrieving content from domain buckets:");
     
     let retrieved_music: Mp3Audio = store.get_from_domain(&music_cid, ContentDomain::Music).await?;
-    println!("  - Retrieved music: {} by {}", 
-        retrieved_music.metadata.title.as_ref().unwrap(),
+    println!("  - Retrieved music: {retrieved_music.metadata.title.as_ref(} by {}").unwrap(),
         retrieved_music.metadata.artist.as_ref().unwrap()
     );
     
     let retrieved_contract: PdfDocument = store.get_from_domain(&contract_cid, ContentDomain::Contracts).await?;
-    println!("  - Retrieved contract: {}", 
-        retrieved_contract.metadata.title.as_ref().unwrap()
+    println!("  - Retrieved contract: {retrieved_contract.metadata.title.as_ref(}").unwrap()
     );
 
     println!("\nDomain partitioning demo completed successfully!");

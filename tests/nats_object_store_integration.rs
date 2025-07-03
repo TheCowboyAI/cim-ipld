@@ -3,10 +3,10 @@
 //! These tests require a running NATS server with JetStream enabled.
 //! Run with: nats-server -js
 
-use cim_ipld::object_store::{NatsObjectStore, ContentStorageService, ContentBucket};
-use cim_ipld::{TypedContent, ContentType};
 use async_nats::jetstream;
 use cid::Cid;
+use cim_ipld::object_store::{ContentBucket, ContentStorageService, NatsObjectStore};
+use cim_ipld::{ContentType, TypedContent};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use std::time::Duration;
@@ -26,7 +26,8 @@ impl TypedContent for TestContent {
 }
 
 /// Helper to connect to NATS for testing
-async fn setup_test_nats() -> Result<(async_nats::Client, jetstream::Context), Box<dyn std::error::Error>> {
+async fn setup_test_nats(
+) -> Result<(async_nats::Client, jetstream::Context), Box<dyn std::error::Error>> {
     // Try to connect to local NATS server
     let client = async_nats::connect("nats://localhost:4222").await?;
     let jetstream = jetstream::new(client.clone());
@@ -49,7 +50,7 @@ async fn test_basic_store_and_retrieve() -> Result<(), Box<dyn std::error::Error
 
     // Store content
     let _cid = object_store.put(&content).await?;
-    println!("Stored content with CID: {}", _cid);
+    println!("Stored content with CID: {_cid}");
 
     // Retrieve content
     let retrieved: TestContent = object_store.get(&_cid).await?;
@@ -120,7 +121,7 @@ async fn test_content_storage_service_caching() -> Result<(), Box<dyn std::error
 
     // Store content
     let cid = storage_service.store(&content).await?;
-    println!("Stored content with CID: {}", cid);
+    println!("Stored content with CID: {cid}");
 
     // First retrieval (from object store)
     let retrieved1: TestContent = storage_service.get(&cid).await?;
@@ -216,8 +217,8 @@ async fn test_batch_operations() -> Result<(), Box<dyn std::error::Error>> {
     // Create multiple contents
     let contents: Vec<TestContent> = (0..10)
         .map(|i| TestContent {
-            id: format!("batch-{}", i),
-            data: format!("Batch content {}", i),
+            id: format!("batch-{i}"),
+            data: format!("Batch content {i}"),
             value: i as u64,
         })
         .collect();

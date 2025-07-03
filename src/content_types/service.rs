@@ -151,10 +151,8 @@ impl ContentService {
     ) -> Result<StoreResult> {
         // Validate size
         if data.len() > self.config.max_content_size {
-            return Err(Error::InvalidContent(format!(
-                "Content size {} exceeds maximum {}",
-                data.len(),
-                self.config.max_content_size
+            return Err(Error::InvalidContent(format!("Content size {} exceeds maximum {}", 
+                data.len(), self.config.max_content_size
             )));
         }
 
@@ -215,10 +213,8 @@ impl ContentService {
     ) -> Result<StoreResult> {
         // Validate size
         if data.len() > self.config.max_content_size {
-            return Err(Error::InvalidContent(format!(
-                "Image size {} exceeds maximum {}",
-                data.len(),
-                self.config.max_content_size
+            return Err(Error::InvalidContent(format!("Image size {} exceeds maximum {}", 
+                data.len(), self.config.max_content_size
             )));
         }
 
@@ -271,10 +267,7 @@ impl ContentService {
         // Check allowed types
         if !self.config.allowed_types.is_empty() 
             && !self.config.allowed_types.contains(&content_type) {
-            return Err(Error::InvalidContent(format!(
-                "Content type {} not allowed",
-                content_type_name(content_type)
-            )));
+            return Err(Error::InvalidContent(format!("Content type {} not allowed", content_type_name(content_type))));
         }
 
         // Calculate CID for deduplication check
@@ -497,33 +490,29 @@ impl ContentService {
         
         // Try as PNG image
         if let Ok(result) = self.retrieve::<PngImage>(cid).await {
-            match target {
-                TransformTarget::Jpeg => {
-                    let jpeg_data = image::convert_format(
-                        &result.content.data,
-                        "png",
-                        "jpeg",
-                        options.quality,
-                    )?;
-                    return Ok(TransformationResult {
-                        data: jpeg_data,
-                        transform_metadata: TransformMetadata {
-                            from_format: "png".to_string(),
-                            to_format: "jpeg".to_string(),
-                            transformed_at: timestamp,
-                            quality_settings: std::collections::HashMap::new(),
-                            notes: vec!["Converted to JPEG with compression".to_string()],
-                        },
-                        source_cid: Some(*cid),
-                    });
-                }
-                _ => {}
+            if target == TransformTarget::Jpeg {
+                let jpeg_data = image::convert_format(
+                    &result.content.data,
+                    "png",
+                    "jpeg",
+                    options.quality,
+                )?;
+                return Ok(TransformationResult {
+                    data: jpeg_data,
+                    transform_metadata: TransformMetadata {
+                        from_format: "png".to_string(),
+                        to_format: "jpeg".to_string(),
+                        transformed_at: timestamp,
+                        quality_settings: std::collections::HashMap::new(),
+                        notes: vec!["Converted to JPEG with compression".to_string()],
+                    },
+                    source_cid: Some(*cid),
+                });
             }
         }
         
         Err(Error::InvalidContent(format!(
-            "Cannot transform content: either CID not found or transformation from source type to {:?} not supported",
-            target
+            "Cannot transform content: either CID not found or transformation from source type to {target:?} not supported"
         )))
     }
 

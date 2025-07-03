@@ -91,8 +91,8 @@ async fn test_chain_integrity_under_attack() -> Result<()> {
     // Add legitimate items
     for i in 0..5 {
         let content = TestContent {
-            id: format!("chain-{}", i),
-            data: format!("Chain data {}", i),
+            id: format!("chain-{i}"),
+            data: format!("Chain data {i}"),
             value: i as u64,
         };
         chain.append(content, &*context.storage).await?;
@@ -125,8 +125,8 @@ async fn test_chain_integrity_under_attack() -> Result<()> {
     // Add the original items
     for i in 0..5 {
         let content = TestContent {
-            id: format!("chain-{}", i),
-            data: format!("Chain data {}", i),
+            id: format!("chain-{i}"),
+            data: format!("Chain data {i}"),
             value: i as u64,
         };
         attacked_chain.append(content, &*context.storage).await?;
@@ -214,8 +214,8 @@ async fn test_cid_collision_resistance() -> Result<()> {
 
     for i in 0..100 {
         let content = TestContent {
-            id: format!("collision-test-{}", i),
-            data: format!("Unique data {}", i),
+            id: format!("collision-test-{i}"),
+            data: format!("Unique data {i}"),
             value: i,
         };
 
@@ -245,7 +245,7 @@ async fn test_content_integrity_verification() -> Result<()> {
     for size in sizes {
         let data = generate_test_content(size);
         let content = TestContent {
-            id: format!("integrity-{}", size),
+            id: format!("integrity-{size}"),
             data: base64::Engine::encode(&base64::engine::general_purpose::STANDARD, &data),
             value: size as u64,
         };
@@ -277,8 +277,8 @@ async fn test_chain_replay_attack_prevention() -> Result<()> {
     // Add items
     for i in 0..3 {
         let content = TestContent {
-            id: format!("replay-{}", i),
-            data: format!("Data {}", i),
+            id: format!("replay-{i}"),
+            data: format!("Data {i}"),
             value: i as u64,
         };
         original_chain.append(content, &*context.storage).await?;
@@ -316,7 +316,7 @@ mod security_test_helpers {
         // Modify content
         let tampered_content = TestContent {
             id: original_content.id,
-            data: format!("TAMPERED: {}", original_content.data),
+            data: format!("TAMPERED: {original_content.data}"),
             value: original_content.value + 1000,
         };
 

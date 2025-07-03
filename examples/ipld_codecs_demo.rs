@@ -93,7 +93,7 @@ fn demo_dag_cbor() -> Result<()> {
     
     // Encode
     let encoded = DagCborCodec::encode(&node)?;
-    println!("Encoded DAG-CBOR: {} bytes", encoded.len());
+    println!("Encoded DAG-CBOR: {encoded.len(} bytes"));
     println!("First 32 bytes: {:?}", &encoded[..32.min(encoded.len())]);
     
     // Decode
@@ -121,11 +121,11 @@ fn demo_dag_json() -> Result<()> {
     
     // Encode
     let encoded = DagJsonCodec::encode(&data)?;
-    println!("Encoded DAG-JSON: {} bytes", encoded.len());
+    println!("Encoded DAG-JSON: {encoded.len(} bytes"));
     
     // Pretty print
     let pretty = DagJsonCodec::encode_pretty(&data)?;
-    println!("Pretty DAG-JSON:\n{}", pretty);
+    println!("Pretty DAG-JSON:\n{pretty}");
     
     // Decode
     let decoded: serde_json::Value = DagJsonCodec::decode(&encoded)?;
@@ -181,11 +181,11 @@ fn demo_alchemist_config() -> Result<()> {
     
     // Encode as DAG-JSON
     let json = config.to_dag_json_pretty()?;
-    println!("Alchemist Config (DAG-JSON):\n{}", json);
+    println!("Alchemist Config (DAG-JSON):\n{json}");
     
     // Encode as DAG-CBOR
     let cbor = config.to_dag_cbor()?;
-    println!("\nAlchemist Config (DAG-CBOR): {} bytes", cbor.len());
+    println!("\nAlchemist Config (DAG-CBOR): {cbor.len(} bytes"));
     
     Ok(())
 }
@@ -269,7 +269,7 @@ fn demo_workflow_graph() -> Result<()> {
     
     // Encode as DAG-JSON
     let json = workflow.to_dag_json_pretty()?;
-    println!("Workflow Graph (DAG-JSON):\n{}", json);
+    println!("Workflow Graph (DAG-JSON):\n{json}");
     
     // Show codec info
     println!("\nThis would be stored with codec: 0x{:x} (cim-workflow-graph-json)", cim_json::WORKFLOW_GRAPH);
@@ -289,16 +289,16 @@ fn demo_codec_operations() -> Result<()> {
     
     // Encode as DAG-CBOR
     let cbor = data.to_dag_cbor()?;
-    println!("\nDAG-CBOR encoding: {} bytes", cbor.len());
+    println!("\nDAG-CBOR encoding: {cbor.len(} bytes"));
     
     // Encode as DAG-JSON
     let json = data.to_dag_json()?;
-    println!("DAG-JSON encoding: {} bytes", json.len());
-    println!("DAG-JSON content: {}", String::from_utf8_lossy(&json));
+    println!("DAG-JSON encoding: {json.len(} bytes"));
+    println!("DAG-JSON content: {String::from_utf8_lossy(&json}"));
     
     // Pretty print
     let pretty = data.to_dag_json_pretty()?;
-    println!("\nPretty DAG-JSON:\n{}", pretty);
+    println!("\nPretty DAG-JSON:\n{pretty}");
     
     Ok(())
 }
@@ -357,7 +357,7 @@ fn demo_concept_space() -> Result<()> {
     };
     
     let json = space.to_dag_json_pretty()?;
-    println!("Concept Space (DAG-JSON):\n{}", json);
+    println!("Concept Space (DAG-JSON):\n{json}");
     println!("\nThis would be stored with codec: 0x{:x} (cim-concept-space-json)", cim_json::CONCEPT_SPACE);
     
     Ok(())
@@ -408,12 +408,12 @@ fn demo_domain_model() -> Result<()> {
     };
     
     let cbor = model.to_dag_cbor()?;
-    println!("Domain Model (DAG-CBOR): {} bytes", cbor.len());
+    println!("Domain Model (DAG-CBOR): {cbor.len(} bytes"));
     
     let json = model.to_dag_json_pretty()?;
     println!("\nDomain Model (DAG-JSON excerpt):");
     let lines: Vec<&str> = json.lines().take(20).collect();
-    println!("{}", lines.join("\n"));
+    println!("{lines.join("\n"}"));
     println!("... (truncated)");
     
     println!("\nThis would be stored with codec: 0x{:x} (cim-domain-model-json)", cim_json::DOMAIN_MODEL);
@@ -481,7 +481,7 @@ fn demo_event_stream() -> Result<()> {
     };
     
     let json = stream.to_dag_json_pretty()?;
-    println!("Event Stream (DAG-JSON):\n{}", json);
+    println!("Event Stream (DAG-JSON):\n{json}");
     
     println!("\nThis would be stored with codec: 0x{:x} (cim-event-stream-json)", cim_json::EVENT_STREAM);
     

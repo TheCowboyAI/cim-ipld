@@ -103,7 +103,7 @@ async fn test_basic_cid_persistence() -> Result<(), Box<dyn std::error::Error>> 
     
     // Calculate CID before storage
     let expected_cid = content.calculate_cid()?;
-    println!("Expected CID: {}", expected_cid);
+    println!("Expected CID: {expected_cid}");
     
     // Store content
     let stored_cid = context.storage.put(&content).await?;
@@ -150,7 +150,7 @@ async fn test_cid_consistency_across_cycles() -> Result<(), Box<dyn std::error::
     // Perform multiple store/retrieve cycles
     let mut current_content = original_content.clone();
     for cycle in 0..5 {
-        println!("Cycle {}", cycle + 1);
+        println!("Cycle {cycle + 1}");
         
         // Store
         let stored_cid = context.storage.put(&current_content).await?;
@@ -263,7 +263,7 @@ async fn test_concurrent_cid_operations() -> Result<(), Box<dyn std::error::Erro
         let results = results.clone();
         
         let handle = tokio::spawn(async move {
-            println!("Task {} storing content", i);
+            println!("Task {i} storing content");
             let cid = ctx.storage.put(&content).await.unwrap();
             results.lock().await.push(cid);
             cid
@@ -376,11 +376,11 @@ async fn test_event_chain_cid_persistence() -> Result<(), Box<dyn std::error::Er
     // Add events to chain
     for i in 0..5 {
         let event = TestEvent {
-            event_id: format!("event-{}", i),
+            event_id: format!("event-{i}"),
             event_type: "test.event".to_string(),
             payload: serde_json::json!({
                 "index": i,
-                "data": format!("Event data {}", i)
+                "data": format!("Event data {i}")
             }),
         };
         
@@ -617,8 +617,8 @@ async fn test_batch_cid_operations() -> Result<(), Box<dyn std::error::Error>> {
     // Create multiple contents
     let contents: Vec<TestContent> = (0..20)
         .map(|i| TestContent {
-            id: format!("batch-{}", i),
-            data: format!("Batch content number {}", i),
+            id: format!("batch-{i}"),
+            data: format!("Batch content number {i}"),
             value: i as u64 * 10,
         })
         .collect();

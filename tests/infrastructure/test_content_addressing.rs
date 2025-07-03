@@ -141,7 +141,7 @@ impl IPLDContentTransformer {
             acc.wrapping_mul(31).wrapping_add(b as u64)
         });
 
-        format!("{}{:032x}", codec_prefix, hash)
+        format!("{codec_prefix}{:032x}", hash)
     }
 }
 
@@ -218,7 +218,7 @@ impl ContentAddressingSystem {
 
     pub fn verify_content_consistency(&self, cid: &str) -> Result<bool, String> {
         let (content, _, codec) = self.stored_content.get(cid)
-            .ok_or_else(|| format!("Content with CID {} not found", cid))?;
+            .ok_or_else(|| format!("Content with CID {cid} not found"))?;
 
         let recalculated_cid = self.transformer.calculate_cid(content, codec);
         Ok(recalculated_cid == cid)

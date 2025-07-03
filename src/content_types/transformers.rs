@@ -157,7 +157,7 @@ pub mod document {
     pub fn to_plain_text(content: &str) -> Result<String> {
         // Use regex to strip HTML tags
         let tag_regex = Regex::new(r"<[^>]+>").map_err(|e| 
-            Error::InvalidContent(format!("Regex error: {}", e))
+            Error::InvalidContent(format!("Regex error: {e}"))
         )?;
         let mut text = tag_regex.replace_all(content, "").to_string();
         
@@ -181,7 +181,7 @@ pub mod document {
         
         // Clean up whitespace
         let whitespace_regex = Regex::new(r"\s+").map_err(|e| 
-            Error::InvalidContent(format!("Regex error: {}", e))
+            Error::InvalidContent(format!("Regex error: {e}"))
         )?;
         text = whitespace_regex.replace_all(&text, " ").trim().to_string();
         
@@ -270,11 +270,11 @@ pub mod image {
             "jpeg" | "jpg" => ImageFormat::Jpeg,
             "png" => ImageFormat::Png,
             "webp" => ImageFormat::WebP,
-            _ => return Err(Error::InvalidContent(format!("Unsupported format: {}", format))),
+            _ => return Err(Error::InvalidContent(format!("Unsupported format: {format}"))),
         };
         
         ::image::load_from_memory_with_format(data, img_format)
-            .map_err(|e| Error::InvalidContent(format!("Failed to load image: {}", e)))
+            .map_err(|e| Error::InvalidContent(format!("Failed to load image: {e}")))
     }
     
     /// Helper to encode image to bytes
@@ -286,17 +286,17 @@ pub mod image {
             "jpeg" | "jpg" => {
                 let _q = quality.unwrap_or(90);
                 img.write_to(&mut cursor, ImageFormat::Jpeg)
-                    .map_err(|e| Error::InvalidContent(format!("Failed to encode JPEG: {}", e)))?;
+                    .map_err(|e| Error::InvalidContent(format!("Failed to encode JPEG: {e}")))?;
             }
             "png" => {
                 img.write_to(&mut cursor, ImageFormat::Png)
-                    .map_err(|e| Error::InvalidContent(format!("Failed to encode PNG: {}", e)))?;
+                    .map_err(|e| Error::InvalidContent(format!("Failed to encode PNG: {e}")))?;
             }
             "webp" => {
                 img.write_to(&mut cursor, ImageFormat::WebP)
-                    .map_err(|e| Error::InvalidContent(format!("Failed to encode WebP: {}", e)))?;
+                    .map_err(|e| Error::InvalidContent(format!("Failed to encode WebP: {e}")))?;
             }
-            _ => return Err(Error::InvalidContent(format!("Unsupported format: {}", format))),
+            _ => return Err(Error::InvalidContent(format!("Unsupported format: {format}"))),
         }
         
         Ok(buffer)
@@ -328,7 +328,7 @@ pub mod audio {
         // For now, we can only decode to raw PCM
         // Full conversion would require an encoder library like ffmpeg
         Err(Error::InvalidContent(
-            format!("Audio conversion from {} to {} requires external encoder. Only metadata extraction is currently supported.", from_format, to_format)
+            format!("Audio conversion from {from_format} to {to_format} requires external encoder. Only metadata extraction is currently supported.")
         ))
     }
     
@@ -354,7 +354,7 @@ pub mod audio {
         let metadata_opts = MetadataOptions::default();
         let probe_result = symphonia::default::get_probe()
             .format(&hint, mss, &format_opts, &metadata_opts)
-            .map_err(|e| Error::InvalidContent(format!("Failed to probe audio: {}", e)))?;
+            .map_err(|e| Error::InvalidContent(format!("Failed to probe audio: {e}")))?;
         
         let mut format_reader = probe_result.format;
         
@@ -412,7 +412,7 @@ pub mod audio {
                     }
                     _ => {
                         // Tag.key is a String, not Option<String>
-                        metadata.tags.push(format!("{}: {}", tag.key, tag.value.to_string()));
+                        metadata.tags.push(format!("{}: {}", tag.key, tag.value));
                     }
                 }
             }
@@ -442,8 +442,7 @@ pub mod video {
         // Video conversion requires external tools like ffmpeg
         // This could be implemented using the ffmpeg-sys crate or by calling ffmpeg as a subprocess
         Err(Error::InvalidContent(format!(
-            "Video conversion from {} to {} requires external tools (e.g., ffmpeg). Consider using ffmpeg-sys crate for full implementation.",
-            from_format, to_format
+            "Video conversion from {from_format} to {to_format} requires external tools (e.g., ffmpeg). Consider using ffmpeg-sys crate for full implementation."
         )))
     }
     
@@ -482,7 +481,7 @@ pub mod video {
                     if let Some(_moov_pos) = find_box(data, b"moov") {
                         // In a real implementation, we would parse the moov box
                         // to extract actual metadata
-                        metadata.tags.push(format!("container: {}", format));
+                        metadata.tags.push(format!("container: {format}"));
                     }
                 }
             }
@@ -502,7 +501,7 @@ pub mod video {
                 }
             }
             _ => {
-                metadata.tags.push(format!("format: {}", format));
+                metadata.tags.push(format!("format: {format}"));
             }
         }
         
@@ -531,7 +530,7 @@ pub mod video {
         // 3. Calling ffmpeg as a subprocess
         
         Err(Error::InvalidContent(
-            format!("Video thumbnail extraction requires external tools. Consider using ffmpeg-sys or gstreamer-rs crates for full implementation.")
+            "Video thumbnail extraction requires external tools. Consider using ffmpeg-sys or gstreamer-rs crates for full implementation.".to_string()
         ))
     }
     
@@ -625,12 +624,12 @@ pub mod validation {
                 }
             }
             "markdown" => {
-                if let Err(_) = std::str::from_utf8(data) {
+                if std::str::from_utf8(data).is_err() {
                     report.add_error("Invalid UTF-8 encoding");
                 }
             }
             _ => {
-                report.add_warning(&format!("No validation rules for format: {}", format));
+                report.add_warning(&format!("No validation rules for format: {format}"));
             }
         }
         

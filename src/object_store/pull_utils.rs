@@ -6,7 +6,7 @@ use futures::stream::{self, StreamExt};
 use std::collections::HashMap;
 
 /// Options for pulling content from JetStream
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct PullOptions {
     /// Maximum number of items to pull
     pub limit: Option<usize>,
@@ -16,17 +16,6 @@ pub struct PullOptions {
     pub max_size: Option<usize>,
     /// Only pull compressed objects
     pub compressed_only: bool,
-}
-
-impl Default for PullOptions {
-    fn default() -> Self {
-        Self {
-            limit: None,
-            min_size: None,
-            max_size: None,
-            compressed_only: false,
-        }
-    }
 }
 
 /// Result of a pull operation
@@ -76,7 +65,7 @@ impl NatsObjectStore {
             match self.get::<T>(&obj.cid).await {
                 Ok(content) => {
                     results.push(PullResult {
-                        cid: obj.cid.clone(),
+                        cid: obj.cid,
                         content,
                         metadata: obj,
                     });
@@ -98,7 +87,7 @@ impl NatsObjectStore {
         max_concurrent: usize,
     ) -> BatchPullResult<T> {
         let futures = cids.iter().map(|cid| {
-            let cid = cid.clone();
+            let cid = *cid;
             async move {
                 match self.get::<T>(&cid).await {
                     Ok(content) => {
@@ -112,10 +101,10 @@ impl NatsObjectStore {
                             });
 
                         Ok(PullResult {
-                            cid: cid.clone(),
+                            cid,
                             content,
                             metadata: metadata.unwrap_or_else(|| ObjectInfo {
-                                cid: cid.clone(),
+                                cid,
                                 size: 0,
                                 created_at: std::time::SystemTime::now(),
                                 compressed: false,
@@ -231,7 +220,7 @@ impl NatsObjectStore {
             match self.get::<T>(&obj.cid).await {
                 Ok(content) => {
                     let result = Ok(PullResult {
-                        cid: obj.cid.clone(),
+                        cid: obj.cid,
                         content,
                         metadata: obj.clone(),
                     });

@@ -8,8 +8,8 @@
 //!     D --> E[Same Content = Same CID]
 //! ```
 
-use cim_ipld::{TypedContent, ContentType, Result};
-use serde::{Serialize, Deserialize, de::DeserializeOwned};
+use cim_ipld::{ContentType, Result, TypedContent};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::collections::HashMap;
 
 /// Test event with metadata
@@ -65,7 +65,6 @@ fn test_same_payload_same_cid() {
     /// Given: Two events with same payload but different metadata
     /// When: CIDs are calculated
     /// Then: CIDs should be identical
-
     let event1 = TestEvent {
         id: "evt-123".to_string(),
         timestamp: "2024-01-01T10:00:00Z".to_string(),
@@ -78,10 +77,10 @@ fn test_same_payload_same_cid() {
     };
 
     let event2 = TestEvent {
-        id: "evt-456".to_string(), // Different ID
+        id: "evt-456".to_string(),                     // Different ID
         timestamp: "2024-01-02T15:30:00Z".to_string(), // Different timestamp
-        trace_id: Some("trace-xyz".to_string()), // Different trace
-        event_type: "UserCreated".to_string(), // Same type
+        trace_id: Some("trace-xyz".to_string()),       // Different trace
+        event_type: "UserCreated".to_string(),         // Same type
         data: serde_json::json!({
             "username": "alice",
             "email": "alice@example.com"
@@ -101,7 +100,6 @@ fn test_different_payload_different_cid() {
     /// Given: Two events with different payloads
     /// When: CIDs are calculated
     /// Then: CIDs should be different
-
     let event1 = TestEvent {
         id: "evt-123".to_string(),
         timestamp: "2024-01-01T10:00:00Z".to_string(),
@@ -114,9 +112,9 @@ fn test_different_payload_different_cid() {
     };
 
     let event2 = TestEvent {
-        id: "evt-123".to_string(), // Same ID
+        id: "evt-123".to_string(),                     // Same ID
         timestamp: "2024-01-01T10:00:00Z".to_string(), // Same timestamp
-        trace_id: None, // Same trace
+        trace_id: None,                                // Same trace
         event_type: "UserCreated".to_string(),
         data: serde_json::json!({
             "username": "bob", // Different username!
@@ -137,7 +135,6 @@ fn test_message_wrapper_canonical() {
     /// Given: Messages with same content but different wrappers
     /// When: CIDs are calculated
     /// Then: CIDs should be identical
-
     let content = "Important business data";
 
     let msg1 = MessageWrapper {
@@ -146,24 +143,31 @@ fn test_message_wrapper_canonical() {
         headers: vec![
             ("from".to_string(), "service-a".to_string()),
             ("trace".to_string(), "trace-123".to_string()),
-        ].into_iter().collect(),
+        ]
+        .into_iter()
+        .collect(),
         body: content.to_string(),
     };
 
     let msg2 = MessageWrapper {
-        message_id: "msg-002".to_string(), // Different ID
+        message_id: "msg-002".to_string(),           // Different ID
         sent_at: "2024-01-02T15:00:00Z".to_string(), // Different time
         headers: vec![
             ("from".to_string(), "service-b".to_string()), // Different sender
             ("trace".to_string(), "trace-999".to_string()),
-        ].into_iter().collect(),
+        ]
+        .into_iter()
+        .collect(),
         body: content.to_string(), // Same content!
     };
 
     let cid1 = msg1.calculate_cid().unwrap();
     let cid2 = msg2.calculate_cid().unwrap();
 
-    assert_eq!(cid1, cid2, "Same content should produce same CID despite different wrapper");
+    assert_eq!(
+        cid1, cid2,
+        "Same content should produce same CID despite different wrapper"
+    );
 }
 
 #[test]
@@ -173,7 +177,6 @@ fn test_nested_canonical_payload() {
     /// Given: Nested message with event
     /// When: CID calculated
     /// Then: Only stable data affects CID
-
     let event = TestEvent {
         id: "evt-nested".to_string(),
         timestamp: "2024-01-01T10:00:00Z".to_string(),
@@ -194,10 +197,10 @@ fn test_nested_canonical_payload() {
 
     // Create another with different wrapper but same event payload
     let event2 = TestEvent {
-        id: "evt-different".to_string(), // Different event ID
+        id: "evt-different".to_string(),               // Different event ID
         timestamp: "2024-01-02T15:00:00Z".to_string(), // Different time
-        trace_id: Some("trace-new".to_string()), // Added trace
-        event_type: "OrderPlaced".to_string(), // Same type
+        trace_id: Some("trace-new".to_string()),       // Added trace
+        event_type: "OrderPlaced".to_string(),         // Same type
         data: serde_json::json!({
             "order_id": "order-123",
             "total": 99.99
@@ -207,7 +210,9 @@ fn test_nested_canonical_payload() {
     let wrapped2 = MessageWrapper {
         message_id: "wrap-002".to_string(),
         sent_at: "2024-01-03T20:00:00Z".to_string(),
-        headers: vec![("extra".to_string(), "header".to_string())].into_iter().collect(),
+        headers: vec![("extra".to_string(), "header".to_string())]
+            .into_iter()
+            .collect(),
         body: event2,
     };
 
@@ -228,7 +233,6 @@ fn test_canonical_payload_consistency() {
     /// Given: Same event
     /// When: canonical_payload called multiple times
     /// Then: Results should be identical
-
     let event = TestEvent {
         id: "evt-consistent".to_string(),
         timestamp: "2024-01-01T10:00:00Z".to_string(),
@@ -274,7 +278,7 @@ fn test_default_canonical_payload() {
     };
 
     let content2 = SimpleContent {
-        id: "id-2".to_string(), // Different ID
+        id: "id-2".to_string(),        // Different ID
         data: "test data".to_string(), // Same data
     };
 

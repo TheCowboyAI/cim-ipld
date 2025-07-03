@@ -33,12 +33,12 @@
 #![feature(test)]
 extern crate test;
 
-use test::Bencher;
-use cim_ipld::*;
-use cim_ipld::object_store::NatsObjectStore;
 use cim_ipld::chain::{ChainedContent, ContentChain};
 use cim_ipld::codec::CimCodec;
+use cim_ipld::object_store::NatsObjectStore;
+use cim_ipld::*;
 use std::collections::HashMap;
+use test::Bencher;
 use tokio::runtime::Runtime;
 
 // Test content for benchmarks
@@ -83,11 +83,7 @@ fn bench_store_small_content(b: &mut Bencher) {
         metadata: HashMap::new(),
     };
 
-    b.iter(|| {
-        rt.block_on(async {
-            test::black_box(storage.put(&content).await.unwrap())
-        })
-    });
+    b.iter(|| rt.block_on(async { test::black_box(storage.put(&content).await.unwrap()) }));
 }
 
 #[bench]
@@ -104,11 +100,7 @@ fn bench_store_medium_content(b: &mut Bencher) {
         metadata: HashMap::new(),
     };
 
-    b.iter(|| {
-        rt.block_on(async {
-            test::black_box(storage.put(&content).await.unwrap())
-        })
-    });
+    b.iter(|| rt.block_on(async { test::black_box(storage.put(&content).await.unwrap()) }));
 }
 
 #[bench]
@@ -125,11 +117,7 @@ fn bench_store_large_content(b: &mut Bencher) {
         metadata: HashMap::new(),
     };
 
-    b.iter(|| {
-        rt.block_on(async {
-            test::black_box(storage.put(&content).await.unwrap())
-        })
-    });
+    b.iter(|| rt.block_on(async { test::black_box(storage.put(&content).await.unwrap()) }));
 }
 
 #[bench]
@@ -147,9 +135,7 @@ fn bench_retrieve_with_cache_hit(b: &mut Bencher) {
         metadata: HashMap::new(),
     };
 
-    let cid = rt.block_on(async {
-        storage.put(&content).await.unwrap()
-    });
+    let cid = rt.block_on(async { storage.put(&content).await.unwrap() });
 
     // Warm up cache
     rt.block_on(async {
@@ -178,12 +164,12 @@ fn bench_retrieve_cache_miss(b: &mut Bencher) {
     for i in 0..1000 {
         let content = BenchContent {
             data: generate_bench_data(1024),
-            metadata: vec![("index".to_string(), i.to_string())].into_iter().collect(),
+            metadata: vec![("index".to_string(), i.to_string())]
+                .into_iter()
+                .collect(),
         };
 
-        let cid = rt.block_on(async {
-            storage.put(&content).await.unwrap()
-        });
+        let cid = rt.block_on(async { storage.put(&content).await.unwrap() });
         cids.push(cid);
     }
 
@@ -229,7 +215,9 @@ fn bench_chain_validation_100_items(b: &mut Bencher) {
     for i in 0..100 {
         let content = BenchContent {
             data: generate_bench_data(1024),
-            metadata: vec![("index".to_string(), i.to_string())].into_iter().collect(),
+            metadata: vec![("index".to_string(), i.to_string())]
+                .into_iter()
+                .collect(),
         };
 
         let chained = ChainedContent {
@@ -242,9 +230,7 @@ fn bench_chain_validation_100_items(b: &mut Bencher) {
         chain.append(chained).unwrap();
     }
 
-    b.iter(|| {
-        test::black_box(chain.validate().unwrap())
-    });
+    b.iter(|| test::black_box(chain.validate().unwrap()));
 }
 
 #[bench]
@@ -255,7 +241,9 @@ fn bench_chain_validation_1000_items(b: &mut Bencher) {
     for i in 0..1000 {
         let content = BenchContent {
             data: generate_bench_data(256), // Smaller to speed up creation
-            metadata: vec![("index".to_string(), i.to_string())].into_iter().collect(),
+            metadata: vec![("index".to_string(), i.to_string())]
+                .into_iter()
+                .collect(),
         };
 
         let chained = ChainedContent {
@@ -268,9 +256,7 @@ fn bench_chain_validation_1000_items(b: &mut Bencher) {
         chain.append(chained).unwrap();
     }
 
-    b.iter(|| {
-        test::black_box(chain.validate().unwrap())
-    });
+    b.iter(|| test::black_box(chain.validate().unwrap()));
 }
 
 #[bench]
@@ -281,7 +267,9 @@ fn bench_chain_traversal(b: &mut Bencher) {
     for i in 0..100 {
         let content = BenchContent {
             data: generate_bench_data(1024),
-            metadata: vec![("index".to_string(), i.to_string())].into_iter().collect(),
+            metadata: vec![("index".to_string(), i.to_string())]
+                .into_iter()
+                .collect(),
         };
 
         let chained = ChainedContent {
@@ -314,12 +302,12 @@ fn bench_encode_small_json(b: &mut Bencher) {
         metadata: vec![
             ("key1".to_string(), "value1".to_string()),
             ("key2".to_string(), "value2".to_string()),
-        ].into_iter().collect(),
+        ]
+        .into_iter()
+        .collect(),
     };
 
-    b.iter(|| {
-        test::black_box(codec.encode(&content).unwrap())
-    });
+    b.iter(|| test::black_box(codec.encode(&content).unwrap()));
 }
 
 #[bench]
@@ -330,7 +318,9 @@ fn bench_decode_small_json(b: &mut Bencher) {
         metadata: vec![
             ("key1".to_string(), "value1".to_string()),
             ("key2".to_string(), "value2".to_string()),
-        ].into_iter().collect(),
+        ]
+        .into_iter()
+        .collect(),
     };
 
     let encoded = codec.encode(&content).unwrap();
@@ -348,7 +338,7 @@ fn bench_encode_with_compression(b: &mut Bencher) {
     // Create highly compressible content
     let mut metadata = HashMap::new();
     for i in 0..100 {
-        metadata.insert(format!("key{}", i), "repeated_value".to_string());
+        metadata.insert(format!("key{i}"), "repeated_value".to_string());
     }
 
     let content = BenchContent {
@@ -356,9 +346,7 @@ fn bench_encode_with_compression(b: &mut Bencher) {
         metadata,
     };
 
-    b.iter(|| {
-        test::black_box(codec.encode(&content).unwrap())
-    });
+    b.iter(|| test::black_box(codec.encode(&content).unwrap()));
 }
 
 #[bench]
@@ -368,7 +356,7 @@ fn bench_decode_with_compression(b: &mut Bencher) {
     // Create highly compressible content
     let mut metadata = HashMap::new();
     for i in 0..100 {
-        metadata.insert(format!("key{}", i), "repeated_value".to_string());
+        metadata.insert(format!("key{i}"), "repeated_value".to_string());
     }
 
     let content = BenchContent {
@@ -398,7 +386,9 @@ fn bench_batch_store_10_items(b: &mut Bencher) {
     let contents: Vec<BenchContent> = (0..10)
         .map(|i| BenchContent {
             data: generate_bench_data(1024),
-            metadata: vec![("index".to_string(), i.to_string())].into_iter().collect(),
+            metadata: vec![("index".to_string(), i.to_string())]
+                .into_iter()
+                .collect(),
         })
         .collect();
 
@@ -428,7 +418,9 @@ fn bench_batch_retrieve_10_items(b: &mut Bencher) {
         for i in 0..10 {
             let content = BenchContent {
                 data: generate_bench_data(1024),
-                metadata: vec![("index".to_string(), i.to_string())].into_iter().collect(),
+                metadata: vec![("index".to_string(), i.to_string())]
+                    .into_iter()
+                    .collect(),
             };
             cids.push(storage.put(&content).await.unwrap());
         }
@@ -453,16 +445,12 @@ fn bench_batch_retrieve_10_items(b: &mut Bencher) {
 fn bench_cid_calculation_small(b: &mut Bencher) {
     let data = generate_bench_data(1024);
 
-    b.iter(|| {
-        test::black_box(cim_ipld::calculate_cid(&data))
-    });
+    b.iter(|| test::black_box(cim_ipld::calculate_cid(&data)));
 }
 
 #[bench]
 fn bench_cid_calculation_large(b: &mut Bencher) {
     let data = generate_bench_data(1_048_576); // 1MB
 
-    b.iter(|| {
-        test::black_box(cim_ipld::calculate_cid(&data))
-    });
+    b.iter(|| test::black_box(cim_ipld::calculate_cid(&data)));
 }

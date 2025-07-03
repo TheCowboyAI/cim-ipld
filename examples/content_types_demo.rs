@@ -63,7 +63,7 @@ async fn demo_documents(storage: &NatsObjectStore) -> Result<(), Box<dyn Error>>
     
     let pdf_doc = PdfDocument::new(pdf_data.to_vec(), pdf_metadata)?;
     let pdf_cid = storage.put(&pdf_doc).await?;
-    println!("✓ Stored PDF document: {}", pdf_cid);
+    println!("✓ Stored PDF document: {pdf_cid}");
     
     // Create a Markdown document
     let markdown_content = r#"# CIM-IPLD Documentation
@@ -85,14 +85,14 @@ This is a test markdown document demonstrating content types.
     
     let md_doc = MarkdownDocument::new(markdown_content.to_string(), md_metadata)?;
     let md_cid = storage.put(&md_doc).await?;
-    println!("✓ Stored Markdown document: {}", md_cid);
+    println!("✓ Stored Markdown document: {md_cid}");
     
     // Retrieve and verify
     let retrieved_pdf: PdfDocument = storage.get(&pdf_cid).await?;
     println!("✓ Retrieved PDF, title: {:?}", retrieved_pdf.metadata.title);
     
     let retrieved_md: MarkdownDocument = storage.get(&md_cid).await?;
-    println!("✓ Retrieved Markdown, {} characters", retrieved_md.content.len());
+    println!("✓ Retrieved Markdown, {retrieved_md.content.len(} characters"));
     
     Ok(())
 }
@@ -119,7 +119,7 @@ async fn demo_images(storage: &NatsObjectStore) -> Result<(), Box<dyn Error>> {
     
     let png_image = PngImage::new(png_data, png_metadata)?;
     let png_cid = storage.put(&png_image).await?;
-    println!("✓ Stored PNG image: {}", png_cid);
+    println!("✓ Stored PNG image: {png_cid}");
     
     // Create a JPEG image (minimal header)
     let jpeg_data = vec![
@@ -139,12 +139,11 @@ async fn demo_images(storage: &NatsObjectStore) -> Result<(), Box<dyn Error>> {
     
     let jpeg_image = JpegImage::new(jpeg_data, jpeg_metadata)?;
     let jpeg_cid = storage.put(&jpeg_image).await?;
-    println!("✓ Stored JPEG image: {}", jpeg_cid);
+    println!("✓ Stored JPEG image: {jpeg_cid}");
     
     // Retrieve and display metadata
     let retrieved_png: PngImage = storage.get(&png_cid).await?;
-    println!("✓ Retrieved PNG: {}x{} pixels", 
-        retrieved_png.metadata.width.unwrap_or(0),
+    println!("✓ Retrieved PNG: {retrieved_png.metadata.width.unwrap_or(0}x{} pixels"),
         retrieved_png.metadata.height.unwrap_or(0)
     );
     
@@ -174,7 +173,7 @@ async fn demo_audio(storage: &NatsObjectStore) -> Result<(), Box<dyn Error>> {
     
     let mp3_audio = Mp3Audio::new(mp3_data, mp3_metadata)?;
     let mp3_cid = storage.put(&mp3_audio).await?;
-    println!("✓ Stored MP3 audio: {}", mp3_cid);
+    println!("✓ Stored MP3 audio: {mp3_cid}");
     
     // Create a WAV file
     let mut wav_data = vec![
@@ -205,12 +204,11 @@ async fn demo_audio(storage: &NatsObjectStore) -> Result<(), Box<dyn Error>> {
     
     let wav_audio = WavAudio::new(wav_data, wav_metadata)?;
     let wav_cid = storage.put(&wav_audio).await?;
-    println!("✓ Stored WAV audio: {}", wav_cid);
+    println!("✓ Stored WAV audio: {wav_cid}");
     
     // Retrieve and display info
     let retrieved_mp3: Mp3Audio = storage.get(&mp3_cid).await?;
-    println!("✓ Retrieved MP3: {} - {} ({}ms)", 
-        retrieved_mp3.metadata.artist.as_ref().unwrap_or(&"Unknown".to_string()),
+    println!("✓ Retrieved MP3: {retrieved_mp3.metadata.artist.as_ref(} - {} ({}ms)").unwrap_or(&"Unknown".to_string()),
         retrieved_mp3.metadata.title.as_ref().unwrap_or(&"Unknown".to_string()),
         retrieved_mp3.metadata.duration_ms.unwrap_or(0)
     );
@@ -242,12 +240,11 @@ async fn demo_video(storage: &NatsObjectStore) -> Result<(), Box<dyn Error>> {
     
     let mp4_video = Mp4Video::new(mp4_data, mp4_metadata)?;
     let mp4_cid = storage.put(&mp4_video).await?;
-    println!("✓ Stored MP4 video: {}", mp4_cid);
+    println!("✓ Stored MP4 video: {mp4_cid}");
     
     // Retrieve and display info
     let retrieved_mp4: Mp4Video = storage.get(&mp4_cid).await?;
-    println!("✓ Retrieved MP4: {}x{} @ {}fps", 
-        retrieved_mp4.metadata.width.unwrap_or(0),
+    println!("✓ Retrieved MP4: {retrieved_mp4.metadata.width.unwrap_or(0}x{} @ {}fps"),
         retrieved_mp4.metadata.height.unwrap_or(0),
         retrieved_mp4.metadata.frame_rate.unwrap_or(0.0)
     );
@@ -270,7 +267,7 @@ async fn demo_content_detection(_storage: &NatsObjectStore) -> Result<(), Box<dy
     for (data, expected) in test_data {
         if let Some(content_type) = detect_content_type(&data) {
             let name = content_type_name(content_type);
-            println!("✓ Detected {} from signature", expected);
+            println!("✓ Detected {expected} from signature");
             assert!(name.contains(expected));
         }
     }
@@ -289,16 +286,16 @@ async fn demo_list_by_type(storage: &NatsObjectStore) -> Result<(), Box<dyn Erro
     
     // List documents
     let docs = storage.list(ContentBucket::Documents).await?;
-    println!("Documents bucket: {} items", docs.len());
+    println!("Documents bucket: {docs.len(} items"));
     for (i, obj) in docs.iter().take(5).enumerate() {
-        println!("  {}. {} ({} bytes)", i + 1, obj.cid, obj.size);
+        println!("  {i + 1}. {obj.cid} ({obj.size} bytes)");
     }
     
     // List media (images, audio, video)
     let media = storage.list(ContentBucket::Media).await?;
-    println!("\nMedia bucket: {} items", media.len());
+    println!("\nMedia bucket: {media.len(} items"));
     for (i, obj) in media.iter().take(5).enumerate() {
-        println!("  {}. {} ({} bytes)", i + 1, obj.cid, obj.size);
+        println!("  {i + 1}. {obj.cid} ({obj.size} bytes)");
     }
     
     Ok(())

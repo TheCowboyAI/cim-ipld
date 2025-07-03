@@ -80,7 +80,7 @@ impl IPLDEventStore {
     ) -> Result<Cid, String> {
         // Serialize event for CID calculation
         let event_bytes = serde_json::to_vec(&event)
-            .map_err(|e| format!("Serialization error: {}", e))?;
+            .map_err(|e| format!("Serialization error: {e}"))?;
         
         // Calculate CID using blake3
         let hash = blake3::hash(&event_bytes);
@@ -98,7 +98,7 @@ impl IPLDEventStore {
         
         // Create CID v1
         let mh = multihash::Multihash::from_bytes(&multihash_bytes)
-            .map_err(|e| format!("Multihash error: {}", e))?;
+            .map_err(|e| format!("Multihash error: {e}"))?;
         let cid = Cid::new_v1(0x71, mh); // 0x71 = dag-cbor
         
         // Store content
@@ -118,7 +118,7 @@ impl IPLDEventStore {
 
     pub fn validate_chain(&self, content_id: &str) -> Result<(Cid, Cid, usize), String> {
         let indices = self.content_chains.get(content_id)
-            .ok_or_else(|| format!("No events for content {}", content_id))?;
+            .ok_or_else(|| format!("No events for content {content_id}"))?;
         
         if indices.is_empty() {
             return Err("No events in content chain".to_string());
@@ -130,7 +130,7 @@ impl IPLDEventStore {
             let (_, expected_prev_cid, _) = &self.events[indices[i - 1]];
             
             if prev_cid.as_ref() != Some(expected_prev_cid) {
-                return Err(format!("Chain broken at position {} for content {}", i, content_id));
+                return Err(format!("Chain broken at position {i} for content {content_id}"));
             }
         }
 
@@ -261,7 +261,7 @@ mod tests {
         
         for (i, (event_type, content)) in versions.iter().enumerate() {
             let event = IPLDEventData {
-                event_id: format!("evt_{}", i + 1),
+                event_id: format!("evt_{i + 1}"),
                 content_id: content_id.to_string(),
                 event_type: event_type.to_string(),
                 sequence: (i + 1) as u64,
@@ -327,7 +327,7 @@ mod tests {
         // Act & Assert
         for (content_id, content_type, payload) in content_types {
             let event = IPLDEventData {
-                event_id: format!("{}_created", content_id),
+                event_id: format!("{content_id}_created"),
                 content_id: content_id.to_string(),
                 event_type: "MediaUploaded".to_string(),
                 sequence: 1,

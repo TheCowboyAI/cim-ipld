@@ -60,7 +60,7 @@ async fn test_pdf_document() -> Result<(), Box<dyn std::error::Error>> {
     let recalculated_cid = retrieved.calculate_cid()?;
     assert_eq!(recalculated_cid, cid);
     
-    println!("✓ PDF document test passed, CID: {}", cid);
+    println!("✓ PDF document test passed, CID: {cid}");
     
     Ok(())
 }
@@ -106,7 +106,7 @@ This is a **test** markdown document with:
     assert_eq!(retrieved.content, content);
     assert_eq!(retrieved.metadata.tags.len(), 2);
     
-    println!("✓ Markdown document test passed, CID: {}", cid);
+    println!("✓ Markdown document test passed, CID: {cid}");
     
     Ok(())
 }
@@ -287,8 +287,8 @@ async fn test_cid_uniqueness() -> Result<(), Box<dyn std::error::Error>> {
     assert_ne!(text_cid, md_cid);
     
     println!("✓ Cross-type CID uniqueness verified");
-    println!("  Text CID: {}", text_cid);
-    println!("  Markdown CID: {}", md_cid);
+    println!("  Text CID: {text_cid}");
+    println!("  Markdown CID: {md_cid}");
     
     Ok(())
 }

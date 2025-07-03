@@ -121,10 +121,7 @@ impl CIDChainValidator {
 
             // Check previous CID matches
             if current.previous_cid.as_ref() != Some(&previous.cid) {
-                return Err(format!(
-                    "Chain broken at position {}: expected previous CID {:?}, got {:?}",
-                    i, previous.cid, current.previous_cid
-                ));
+                return Err(format!("Chain broken at position {i}: expected previous CID {:?}, got {:?}", previous.cid, current.previous_cid));
             }
 
             // Recalculate CID to verify
@@ -134,18 +131,12 @@ impl CIDChainValidator {
             );
 
             if current.cid != expected_cid {
-                return Err(format!(
-                    "Invalid CID at position {}: expected {:?}, got {:?}",
-                    i, expected_cid, current.cid
-                ));
+                return Err(format!("Invalid CID at position {i}: expected {:?}, got {:?}", expected_cid, current.cid));
             }
 
             // Check sequence
             if current.sequence != previous.sequence + 1 {
-                return Err(format!(
-                    "Invalid sequence at position {}: expected {}, got {}",
-                    i, previous.sequence + 1, current.sequence
-                ));
+                return Err(format!("Invalid sequence at position {i}: expected {previous.sequence + 1}, got {current.sequence}"));
             }
         }
 

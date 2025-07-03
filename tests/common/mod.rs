@@ -74,8 +74,8 @@ impl TestContext {
 
         for i in 0..length {
             let content = TestContent {
-                id: format!("item-{}", i),
-                data: format!("Test data {}", i),
+                id: format!("item-{i}"),
+                data: format!("Test data {i}"),
                 value: i as u64,
             };
             chain.append(content)?;
@@ -123,8 +123,8 @@ pub fn generate_test_content(size: usize) -> Vec<u8> {
 pub fn create_test_chain_data(length: usize) -> Vec<TestContent> {
     (0..length)
         .map(|i| TestContent {
-            id: format!("chain-item-{}", i),
-            data: format!("Chain data {}: {}", i, uuid::Uuid::new_v4()),
+            id: format!("chain-item-{i}"),
+            data: format!("Chain data {i}: {uuid::Uuid::new_v4(}")),
             value: thread_rng().gen_range(0..1000),
         })
         .collect()
@@ -245,7 +245,7 @@ mod tests {
         let chain_data = create_test_chain_data(10);
         assert_eq!(chain_data.len(), 10);
         for (i, item) in chain_data.iter().enumerate() {
-            assert_eq!(item.id, format!("chain-item-{}", i));
+            assert_eq!(item.id, format!("chain-item-{i}"));
         }
     }
 }

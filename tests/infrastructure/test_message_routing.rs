@@ -82,8 +82,8 @@ impl ContentHandler for DocumentHandler {
         
         Ok(HandlerResult {
             success: true,
-            output_cid: Some(format!("{}_processed", event.cid)),
-            message: format!("Document {} processed", event.cid),
+            output_cid: Some(format!("{event.cid}_processed")),
+            message: format!("Document {event.cid} processed"),
         })
     }
     
@@ -113,8 +113,8 @@ impl ContentHandler for ImageHandler {
         
         Ok(HandlerResult {
             success: true,
-            output_cid: Some(format!("{}_image_processed", event.cid)),
-            message: format!("Image {} processed", event.cid),
+            output_cid: Some(format!("{event.cid}_image_processed")),
+            message: format!("Image {event.cid} processed"),
         })
     }
     
@@ -167,7 +167,7 @@ impl ContentRouter {
     pub fn route_event(&mut self, event: ContentEvent) -> Result<HandlerResult, String> {
         let handler = self.handlers.get(&event.content_type)
             .or(self.fallback_handler.as_ref())
-            .ok_or_else(|| format!("No handler for content type: {}", event.content_type))?;
+            .ok_or_else(|| format!("No handler for content type: {event.content_type}"))?;
         
         let result = handler.handle(&event)?;
         
@@ -203,8 +203,8 @@ impl ContentHandler for FallbackHandler {
     fn handle(&self, event: &ContentEvent) -> Result<HandlerResult, String> {
         Ok(HandlerResult {
             success: true,
-            output_cid: Some(format!("{}_fallback", event.cid)),
-            message: format!("Handled by fallback: {}", event.content_type),
+            output_cid: Some(format!("{event.cid}_fallback")),
+            message: format!("Handled by fallback: {event.content_type}"),
         })
     }
     
@@ -387,7 +387,7 @@ mod tests {
         // Route multiple events
         for i in 0..5 {
             let event = ContentEvent {
-                cid: format!("doc{}", i),
+                cid: format!("doc{i}"),
                 content_type: "text/plain".to_string(),
                 operation: ContentOperation::Store,
                 metadata: HashMap::new(),
@@ -425,7 +425,7 @@ mod tests {
         // Act & Assert
         for (i, op) in operations.into_iter().enumerate() {
             let event = ContentEvent {
-                cid: format!("doc{}", i),
+                cid: format!("doc{i}"),
                 content_type: "text/plain".to_string(),
                 operation: op,
                 metadata: HashMap::new(),

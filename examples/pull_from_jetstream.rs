@@ -63,7 +63,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     };
     
     let doc_cid = object_store.put(&doc).await?;
-    println!("Stored document with CID: {}", doc_cid);
+    println!("Stored document with CID: {doc_cid}");
 
     // Store an event
     let event = ExampleEvent {
@@ -77,7 +77,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     };
     
     let event_cid = object_store.put(&event).await?;
-    println!("Stored event with CID: {}", event_cid);
+    println!("Stored event with CID: {event_cid}");
 
     // Now demonstrate pulling from JetStream
     println!("\n=== Pulling from JetStream ===");
@@ -87,45 +87,45 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let document_objects = object_store.list(ContentBucket::Documents).await?;
     
     for obj in &document_objects {
-        println!("  - CID: {}", obj.cid);
-        println!("    Size: {} bytes", obj.size);
-        println!("    Compressed: {}", obj.compressed);
+        println!("  - CID: {obj.cid}");
+        println!("    Size: {obj.size} bytes");
+        println!("    Compressed: {obj.compressed}");
     }
 
     println!("\n2. Listing all CIDs in Events bucket:");
     let event_objects = object_store.list(ContentBucket::Events).await?;
     
     for obj in &event_objects {
-        println!("  - CID: {}", obj.cid);
-        println!("    Size: {} bytes", obj.size);
+        println!("  - CID: {obj.cid}");
+        println!("    Size: {obj.size} bytes");
     }
 
     // Method 2: Pull specific content by CID
     println!("\n3. Retrieving specific content by CID:");
     
     // Retrieve the document
-    println!("\nRetrieving document with CID: {}", doc_cid);
+    println!("\nRetrieving document with CID: {doc_cid}");
     let retrieved_doc: ExampleDocument = object_store.get(&doc_cid).await?;
     
     println!("Retrieved document:");
-    println!("  Title: {}", retrieved_doc.title);
-    println!("  Content: {}", retrieved_doc.content);
+    println!("  Title: {retrieved_doc.title}");
+    println!("  Content: {retrieved_doc.content}");
     println!("  Tags: {:?}", retrieved_doc.tags);
-    println!("  Version: {}", retrieved_doc.version);
+    println!("  Version: {retrieved_doc.version}");
     
     // Verify it matches
     assert_eq!(retrieved_doc, doc);
     println!("✓ Document integrity verified!");
 
     // Retrieve the event
-    println!("\nRetrieving event with CID: {}", event_cid);
+    println!("\nRetrieving event with CID: {event_cid}");
     let retrieved_event: ExampleEvent = object_store.get(&event_cid).await?;
     
     println!("Retrieved event:");
-    println!("  Event ID: {}", retrieved_event.event_id);
-    println!("  Type: {}", retrieved_event.event_type);
-    println!("  Timestamp: {}", retrieved_event.timestamp);
-    println!("  Data: {}", serde_json::to_string_pretty(&retrieved_event.data)?);
+    println!("  Event ID: {retrieved_event.event_id}");
+    println!("  Type: {retrieved_event.event_type}");
+    println!("  Timestamp: {retrieved_event.timestamp}");
+    println!("  Data: {serde_json::to_string_pretty(&retrieved_event.data}")?);
     
     assert_eq!(retrieved_event, event);
     println!("✓ Event integrity verified!");
@@ -134,12 +134,12 @@ async fn main() -> Result<(), Box<dyn Error>> {
     println!("\n4. Checking CID existence:");
     
     let exists = object_store.exists(&doc_cid, ExampleDocument::CONTENT_TYPE.codec()).await?;
-    println!("Document CID {} exists: {}", doc_cid, exists);
+    println!("Document CID {doc_cid} exists: {exists}");
     
     // Try a non-existent CID
     let fake_cid = Cid::try_from("bafkreihdwdcefgh4dqkjv67uzcmw7ojee6xedzdetojuzjevtenxquvyku")?;
     let fake_exists = object_store.exists(&fake_cid, ExampleDocument::CONTENT_TYPE.codec()).await?;
-    println!("Fake CID {} exists: {}", fake_cid, fake_exists);
+    println!("Fake CID {fake_cid} exists: {fake_exists}");
 
     // Method 4: Pull from a specific bucket
     println!("\n5. Pulling from specific buckets:");
@@ -149,20 +149,20 @@ async fn main() -> Result<(), Box<dyn Error>> {
         store: &NatsObjectStore,
         bucket: ContentBucket,
     ) -> Result<(), Box<dyn Error>> {
-        println!("\nBucket: {:?} ({})", bucket, bucket.as_str());
+        println!("\nBucket: {:?} ({bucket})", bucket.as_str());
         
         let objects = store.list(bucket).await?;
         
         if objects.is_empty() {
             println!("  No objects found");
         } else {
-            println!("  Found {} objects:", objects.len());
+            println!("  Found {objects.len(} objects:"));
             for (i, obj) in objects.iter().enumerate().take(5) {
-                println!("    {}. CID: {} ({} bytes)", i + 1, obj.cid, obj.size);
+                println!("    {i + 1}. CID: {obj.cid} ({obj.size} bytes)");
             }
             
             if objects.len() > 5 {
-                println!("    ... and {} more", objects.len() - 5);
+                println!("    ... and {objects.len(} more") - 5);
             }
         }
         
@@ -186,14 +186,14 @@ async fn main() -> Result<(), Box<dyn Error>> {
     println!("\nTrying to retrieve document CID as event type:");
     match object_store.get::<ExampleEvent>(&doc_cid).await {
         Ok(_) => println!("Unexpectedly succeeded!"),
-        Err(e) => println!("Expected error: {}", e),
+        Err(e) => println!("Expected error: {e}"),
     }
 
     // Try to retrieve non-existent CID
     println!("\nTrying to retrieve non-existent CID:");
     match object_store.get::<ExampleDocument>(&fake_cid).await {
         Ok(_) => println!("Unexpectedly found fake CID!"),
-        Err(e) => println!("Expected error: {}", e),
+        Err(e) => println!("Expected error: {e}"),
     }
 
     // Advanced: Pull and process in batches
@@ -203,9 +203,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let mut stored_cids = Vec::new();
     for i in 0..5 {
         let batch_doc = ExampleDocument {
-            title: format!("Document {}", i),
-            content: format!("Content for document {}", i),
-            tags: vec![format!("tag{}", i)],
+            title: format!("Document {i}"),
+            content: format!("Content for document {i}"),
+            tags: vec![format!("tag{i}")],
             version: 1,
         };
         
@@ -213,7 +213,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         stored_cids.push(cid);
     }
     
-    println!("Stored {} documents", stored_cids.len());
+    println!("Stored {stored_cids.len(} documents"));
     
     // Pull them back in parallel
     use futures::future::join_all;
@@ -231,16 +231,16 @@ async fn main() -> Result<(), Box<dyn Error>> {
     for (i, result) in results.into_iter().enumerate() {
         match result {
             Ok(doc) => {
-                println!("  ✓ Retrieved: {}", doc.title);
+                println!("  ✓ Retrieved: {doc.title}");
                 success_count += 1;
             }
             Err(e) => {
-                println!("  ✗ Failed to retrieve document {}: {}", i, e);
+                println!("  ✗ Failed to retrieve document {i}: {e}");
             }
         }
     }
     
-    println!("Successfully retrieved {}/{} documents", success_count, stored_cids.len());
+    println!("Successfully retrieved {success_count}/{stored_cids.len(} documents"));
 
     println!("\n=== Example Complete ===");
     

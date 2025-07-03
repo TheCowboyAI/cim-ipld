@@ -91,7 +91,7 @@ fn main() {
     let documents = create_sample_documents();
     let mut domain_counts: HashMap<ContentDomain, usize> = HashMap::new();
     
-    println!("Processing {} documents...\n", documents.len());
+    println!("Processing {documents.len(} documents...\n"));
     
     for (filename, content, description) in documents {
         // Determine domain
@@ -109,11 +109,11 @@ fn main() {
         *domain_counts.entry(domain).or_insert(0) += 1;
         
         // Display result
-        println!("📄 {}", filename);
-        println!("   Description: {}", description);
+        println!("📄 {filename}");
+        println!("   Description: {description}");
         println!("   Domain: {:?}", domain);
-        println!("   Bucket: {}", bucket);
-        println!("   Preview: {}", content.lines().next().unwrap_or(""));
+        println!("   Bucket: {bucket}");
+        println!("   Preview: {content.lines(}").next().unwrap_or(""));
         println!();
     }
     
@@ -124,7 +124,7 @@ fn main() {
     sorted_domains.sort_by_key(|(domain, _)| format!("{:?}", domain));
     
     for (domain, count) in sorted_domains {
-        println!("  {:?}: {} documents", domain, count);
+        println!("  {:?}: {domain} documents", count);
     }
     
     // Demonstrate custom patterns
@@ -154,5 +154,5 @@ fn main() {
     );
     
     println!("Internal document detected as: {:?}", domain);
-    println!("Routed to bucket: {}", custom_strategy.get_bucket_for_domain(domain));
+    println!("Routed to bucket: {custom_strategy.get_bucket_for_domain(domain}"));
 } 

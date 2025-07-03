@@ -3,12 +3,12 @@
 //! This file contains user stories and tests for ALL capabilities of cim-ipld,
 //! including those not yet covered by existing tests.
 
-use cim_ipld::*;
 use async_nats::jetstream;
-use serde::{Serialize, Deserialize};
+use cim_ipld::*;
+use serde::{Deserialize, Serialize};
+use std::sync::Arc;
 use std::time::SystemTime;
 use uuid::Uuid;
-use std::sync::Arc;
 
 // ============================================================================
 // USER STORY 1: Object Store with Domain Partitioning
@@ -38,31 +38,37 @@ use std::sync::Arc;
 #[tokio::test]
 #[ignore = "not yet implemented"]
 async fn test_domain_partitioning() {
-    use cim_ipld::object_store::{ContentDomain, PartitionStrategy, DomainContentInfo};
-    
+    use cim_ipld::object_store::{ContentDomain, DomainContentInfo, PartitionStrategy};
+
     // Given: A domain partitioner with custom strategy
     let partitioner = PartitionStrategy::new()
         .with_domain(ContentDomain::Graph, vec!["*.graph", "*.workflow"])
         .with_domain(ContentDomain::Event, vec!["event.*", "*.event"])
         .with_domain(ContentDomain::Document, vec!["*.pdf", "*.md", "*.txt"]);
-    
+
     // When: Analyzing different content types
     let graph_content = DomainContentInfo {
         name: "workflow.graph".to_string(),
         content_type: ContentType::Graph,
         size: 1024,
     };
-    
+
     let event_content = DomainContentInfo {
         name: "user.event".to_string(),
         content_type: ContentType::Event,
         size: 512,
     };
-    
+
     // Then: Content is assigned to correct domains
-    assert_eq!(partitioner.determine_domain(&graph_content), ContentDomain::Graph);
-    assert_eq!(partitioner.determine_domain(&event_content), ContentDomain::Event);
-    
+    assert_eq!(
+        partitioner.determine_domain(&graph_content),
+        ContentDomain::Graph
+    );
+    assert_eq!(
+        partitioner.determine_domain(&event_content),
+        ContentDomain::Event
+    );
+
     // And: Pattern matching works
     assert!(partitioner.matches_pattern("workflow.graph", "*.graph"));
     assert!(partitioner.matches_pattern("user.event", "*.event"));
@@ -98,7 +104,7 @@ async fn test_domain_partitioning() {
 async fn test_content_lifecycle_hooks() {
     use cim_ipld::content_types::service::{ContentService, ContentServiceConfig};
     use std::sync::atomic::{AtomicBool, Ordering};
-    
+
     // Given: Content service with hooks
     let storage = Arc::new(cim_ipld::object_store::NatsObjectStore::new("test-bucket"));
     let config = ContentServiceConfig {
@@ -108,38 +114,42 @@ async fn test_content_lifecycle_hooks() {
         allowed_types: vec![ContentType::Document],
         enable_deduplication: true,
     };
-    
+
     let service = ContentService::new(storage, config);
-    
+
     // Track hook execution
     let pre_store_called = Arc::new(AtomicBool::new(false));
     let post_store_called = Arc::new(AtomicBool::new(false));
-    
+
     let pre_store_flag = pre_store_called.clone();
     let post_store_flag = post_store_called.clone();
-    
+
     // Add lifecycle hooks
-    service.add_pre_store_hook(move |data, content_type| {
-        pre_store_flag.store(true, Ordering::SeqCst);
-        
-        // Validate content size
-        if data.len() > 5 * 1024 * 1024 {
-            return Err(Error::InvalidContent("Content too large".to_string()));
-        }
-        
-        // Validate content type
-        if *content_type != ContentType::Document {
-            return Err(Error::InvalidContent("Only documents allowed".to_string()));
-        }
-        
-        Ok(())
-    }).await;
-    
-    service.add_post_store_hook(move |cid, content_type| {
-        post_store_flag.store(true, Ordering::SeqCst);
-        println!("Stored {} as {:?}", cid, content_type);
-    }).await;
-    
+    service
+        .add_pre_store_hook(move |data, content_type| {
+            pre_store_flag.store(true, Ordering::SeqCst);
+
+            // Validate content size
+            if data.len() > 5 * 1024 * 1024 {
+                return Err(Error::InvalidContent("Content too large".to_string()));
+            }
+
+            // Validate content type
+            if *content_type != ContentType::Document {
+                return Err(Error::InvalidContent("Only documents allowed".to_string()));
+            }
+
+            Ok(())
+        })
+        .await;
+
+    service
+        .add_post_store_hook(move |cid, content_type| {
+            post_store_flag.store(true, Ordering::SeqCst);
+            println!("Stored {cid} as {:?}", content_type);
+        })
+        .await;
+
     // When: Storing content
     let metadata = DocumentMetadata {
         title: "Test Document".to_string(),
@@ -148,13 +158,16 @@ async fn test_content_lifecycle_hooks() {
         tags: vec!["test".to_string()],
         ..Default::default()
     };
-    
-    let result = service.store_document(
-        b"# Test Document\n\nThis is a test.".to_vec(),
-        metadata,
-        "markdown"
-    ).await.unwrap();
-    
+
+    let result = service
+        .store_document(
+            b"# Test Document\n\nThis is a test.".to_vec(),
+            metadata,
+            "markdown",
+        )
+        .await
+        .unwrap();
+
     // Then: Hooks were called
     assert!(pre_store_called.load(Ordering::SeqCst));
     assert!(post_store_called.load(Ordering::SeqCst));
@@ -194,14 +207,14 @@ async fn test_content_lifecycle_hooks() {
 #[ignore = "not yet implemented"]
 async fn test_content_transformation() {
     use cim_ipld::content_types::{
-        transformers::{TransformTarget, TransformOptions},
         service::ContentService,
+        transformers::{TransformOptions, TransformTarget},
     };
-    
+
     // Given: Content service with transformation support
     let storage = Arc::new(cim_ipld::object_store::NatsObjectStore::new("test-bucket"));
     let service = ContentService::new(storage, Default::default());
-    
+
     // Store a markdown document
     let markdown_content = r#"
 # Test Document
@@ -211,38 +224,43 @@ This is a **test** document with:
 - *Formatting*
 - [Links](https://example.com)
 "#;
-    
+
     let metadata = DocumentMetadata {
         title: "Test Document".to_string(),
         ..Default::default()
     };
-    
-    let store_result = service.store_document(
-        markdown_content.as_bytes().to_vec(),
-        metadata,
-        "markdown"
-    ).await.unwrap();
-    
+
+    let store_result = service
+        .store_document(markdown_content.as_bytes().to_vec(), metadata, "markdown")
+        .await
+        .unwrap();
+
     // When: Transforming to HTML
-    let html_result = service.transform(
-        &store_result.cid,
-        TransformTarget::Html,
-        TransformOptions::default()
-    ).await.unwrap();
-    
+    let html_result = service
+        .transform(
+            &store_result.cid,
+            TransformTarget::Html,
+            TransformOptions::default(),
+        )
+        .await
+        .unwrap();
+
     // Then: HTML is generated correctly
     let html = String::from_utf8(html_result.data).unwrap();
     assert!(html.contains("<h1>Test Document</h1>"));
     assert!(html.contains("<strong>test</strong>"));
     assert!(html.contains("<a href=\"https://example.com\">Links</a>"));
-    
+
     // When: Transforming to plain text
-    let text_result = service.transform(
-        &store_result.cid,
-        TransformTarget::Text,
-        TransformOptions::default()
-    ).await.unwrap();
-    
+    let text_result = service
+        .transform(
+            &store_result.cid,
+            TransformTarget::Text,
+            TransformOptions::default(),
+        )
+        .await
+        .unwrap();
+
     // Then: Plain text is extracted
     let text = String::from_utf8(text_result.data).unwrap();
     assert!(text.contains("Test Document"));
@@ -277,10 +295,9 @@ This is a **test** document with:
 #[ignore = "not yet implemented"]
 async fn test_audio_video_content() {
     use cim_ipld::content_types::{
-        WavAudio, Mp3Audio, MovVideo, Mp4Video,
-        AudioMetadata, VideoMetadata,
+        AudioMetadata, MovVideo, Mp3Audio, Mp4Video, VideoMetadata, WavAudio,
     };
-    
+
     // Test audio content
     let audio_metadata = AudioMetadata {
         title: Some("Test Audio".to_string()),
@@ -295,16 +312,16 @@ async fn test_audio_video_content() {
         track_number: Some(1),
         ..Default::default()
     };
-    
+
     // Create MP3 audio
     let mp3_data = vec![0xFF, 0xFB]; // MP3 header
     let mp3 = Mp3Audio::new(mp3_data, audio_metadata.clone()).unwrap();
     let mp3_cid = mp3.calculate_cid().unwrap();
-    
+
     // Verify audio properties
     assert_eq!(mp3.metadata.title, Some("Test Audio".to_string()));
     assert_eq!(mp3.metadata.duration_seconds, Some(180.0));
-    
+
     // Test video content
     let video_metadata = VideoMetadata {
         title: Some("Test Video".to_string()),
@@ -318,12 +335,12 @@ async fn test_audio_video_content() {
         bitrate: Some(5000000),
         ..Default::default()
     };
-    
+
     // Create MP4 video
     let mp4_data = vec![0x00, 0x00, 0x00, 0x20, 0x66, 0x74, 0x79, 0x70]; // MP4 header
     let mp4 = Mp4Video::new(mp4_data, video_metadata).unwrap();
     let mp4_cid = mp4.calculate_cid().unwrap();
-    
+
     // Verify video properties
     assert_eq!(mp4.metadata.width, Some(1920));
     assert_eq!(mp4.metadata.height, Some(1080));
@@ -361,16 +378,16 @@ async fn test_audio_video_content() {
 #[ignore = "not yet implemented"]
 async fn test_unified_content_service() {
     use cim_ipld::content_types::{
+        indexing::{SearchFilter, SearchQuery},
         service::{ContentService, ContentStats},
-        indexing::{SearchQuery, SearchFilter},
     };
-    
+
     // Given: Unified content service
     let storage = Arc::new(cim_ipld::object_store::NatsObjectStore::new("test-bucket"));
     let service = ContentService::new(storage, Default::default());
-    
+
     // Store various content types
-    
+
     // 1. Document
     let doc_metadata = DocumentMetadata {
         title: "Technical Report".to_string(),
@@ -378,13 +395,16 @@ async fn test_unified_content_service() {
         tags: vec!["technical".to_string(), "report".to_string()],
         ..Default::default()
     };
-    
-    let doc_result = service.store_document(
-        b"# Technical Report\n\nDetailed analysis...".to_vec(),
-        doc_metadata,
-        "markdown"
-    ).await.unwrap();
-    
+
+    let doc_result = service
+        .store_document(
+            b"# Technical Report\n\nDetailed analysis...".to_vec(),
+            doc_metadata,
+            "markdown",
+        )
+        .await
+        .unwrap();
+
     // 2. Image
     let img_metadata = ImageMetadata {
         title: Some("Architecture Diagram".to_string()),
@@ -394,31 +414,36 @@ async fn test_unified_content_service() {
         height: 1080,
         ..Default::default()
     };
-    
-    let img_result = service.store_image(
-        vec![0x89, 0x50, 0x4E, 0x47], // PNG header
-        img_metadata,
-        "png"
-    ).await.unwrap();
-    
+
+    let img_result = service
+        .store_image(
+            vec![0x89, 0x50, 0x4E, 0x47], // PNG header
+            img_metadata,
+            "png",
+        )
+        .await
+        .unwrap();
+
     // Get content statistics
     let stats: ContentStats = service.stats().await;
     assert!(stats.total_documents > 0);
     assert!(stats.total_images > 0);
-    
+
     // Search across all content
-    let search_query = SearchQuery::new("architecture")
-        .with_limit(10);
-    
+    let search_query = SearchQuery::new("architecture").with_limit(10);
+
     let results = service.search(search_query).await.unwrap();
     assert!(!results.is_empty());
-    
+
     // List by content type
-    let documents = service.list_by_type(
-        ContentType::Document,
-        cim_ipld::object_store::PullOptions::default()
-    ).await.unwrap();
-    
+    let documents = service
+        .list_by_type(
+            ContentType::Document,
+            cim_ipld::object_store::PullOptions::default(),
+        )
+        .await
+        .unwrap();
+
     assert!(documents.contains(&doc_result.cid));
 }
 
@@ -449,23 +474,23 @@ async fn test_unified_content_service() {
 #[ignore = "not yet implemented"]
 async fn test_pull_utilities() {
     use cim_ipld::object_store::{
-        PullOptions, PullResult, BatchPullResult,
-        helpers::{pull_with_retry, batch_pull},
+        helpers::{batch_pull, pull_with_retry},
+        BatchPullResult, PullOptions, PullResult,
     };
-    
+
     // Given: Content in object store
     let storage = Arc::new(cim_ipld::object_store::NatsObjectStore::new("test-bucket"));
-    
+
     // Store test content
     let cids: Vec<Cid> = (0..10)
         .map(|i| {
-            let content = format!("Content item {}", i);
+            let content = format!("Content item {i}");
             let cid = calculate_cid(content.as_bytes(), 0x55);
             // Assume content is stored
             cid
         })
         .collect();
-    
+
     // When: Pulling with options
     let options = PullOptions {
         timeout: Some(std::time::Duration::from_secs(5)),
@@ -473,19 +498,23 @@ async fn test_pull_utilities() {
         cache: true,
         ..Default::default()
     };
-    
+
     // Pull single item with retry
-    let result: PullResult = pull_with_retry(&storage, &cids[0], options.clone()).await.unwrap();
+    let result: PullResult = pull_with_retry(&storage, &cids[0], options.clone())
+        .await
+        .unwrap();
     assert!(result.from_cache || result.success);
-    
+
     // Batch pull multiple items
     let batch_result: BatchPullResult = batch_pull(
         &storage,
         &cids,
         options,
-        Some(5) // Concurrency limit
-    ).await.unwrap();
-    
+        Some(5), // Concurrency limit
+    )
+    .await
+    .unwrap();
+
     assert_eq!(batch_result.successful.len(), 10);
     assert_eq!(batch_result.failed.len(), 0);
     assert!(batch_result.cache_hits > 0); // At least one from cache
@@ -517,21 +546,21 @@ async fn test_pull_utilities() {
 #[tokio::test]
 #[ignore = "not yet implemented"]
 async fn test_custom_ipld_codec() {
-    use cim_ipld::codec::{CodecRegistry, CimCodec};
-    
+    use cim_ipld::codec::{CimCodec, CodecRegistry};
+
     // Define a custom graph codec
     struct GraphCodec;
-    
+
     impl CimCodec for GraphCodec {
         fn code(&self) -> u64 {
             0x300300 // Custom graph codec
         }
-        
+
         fn name(&self) -> &str {
             "graph-codec"
         }
     }
-    
+
     impl CodecOperations for GraphCodec {
         fn encode<T: Serialize>(&self, data: &T) -> Result<Vec<u8>> {
             // Custom encoding optimized for graphs
@@ -539,38 +568,38 @@ async fn test_custom_ipld_codec() {
             // - Compress edge lists
             // - Delta encode positions
             let json = serde_json::to_value(data)?;
-            
+
             // Simplified: just use CBOR for now
             Ok(serde_cbor::to_vec(&json)?)
         }
-        
+
         fn decode<T: for<'de> Deserialize<'de>>(&self, data: &[u8]) -> Result<T> {
             // Custom decoding
             let value: serde_json::Value = serde_cbor::from_slice(data)?;
             Ok(serde_json::from_value(value)?)
         }
     }
-    
+
     // Register the codec
     let mut registry = CodecRegistry::new();
     registry.register(Arc::new(GraphCodec)).unwrap();
-    
+
     // Test encoding/decoding
     #[derive(Serialize, Deserialize, PartialEq, Debug)]
     struct GraphData {
         nodes: Vec<u64>,
         edges: Vec<(u64, u64)>,
     }
-    
+
     let graph = GraphData {
         nodes: vec![1, 2, 3, 4, 5],
         edges: vec![(1, 2), (2, 3), (3, 4), (4, 5), (5, 1)],
     };
-    
+
     let codec = registry.get(0x300300).unwrap();
     let encoded = GraphCodec.encode(&graph).unwrap();
     let decoded: GraphData = GraphCodec.decode(&encoded).unwrap();
-    
+
     assert_eq!(graph, decoded);
 }
 
@@ -582,15 +611,15 @@ async fn test_custom_ipld_codec() {
 fn calculate_cid(data: &[u8], codec: u64) -> Cid {
     let hash = blake3::hash(data);
     let hash_bytes = hash.as_bytes();
-    
+
     let code = 0x1e; // BLAKE3-256
     let size = hash_bytes.len() as u8;
-    
+
     let mut multihash_bytes = Vec::new();
     multihash_bytes.push(code);
     multihash_bytes.push(size);
     multihash_bytes.extend_from_slice(hash_bytes);
-    
+
     let mh = multihash::Multihash::from_bytes(&multihash_bytes).unwrap();
     Cid::new_v1(codec, mh)
 }

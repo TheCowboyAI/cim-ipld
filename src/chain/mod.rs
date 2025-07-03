@@ -121,10 +121,7 @@ impl<T: TypedContent> ChainedContent<T> {
         // Verify our own CID
         let calculated_cid = self.calculate_cid()?;
         if calculated_cid != self.cid {
-            return Err(Error::InvalidCid(format!(
-                "CID mismatch: expected {}, calculated {}",
-                self.cid, calculated_cid
-            )));
+            return Err(Error::InvalidCid(format!("CID mismatch: expected {}, calculated {}", self.cid, calculated_cid)));
         }
 
         Ok(())
@@ -293,8 +290,8 @@ mod tests {
         // Add multiple items
         for i in 0..5 {
             let content = TestContent {
-                id: format!("test-{}", i),
-                data: format!("Data {}", i),
+                id: format!("test-{i}"),
+                data: format!("Data {i}"),
             };
             chain.append(content).unwrap();
         }
@@ -317,8 +314,8 @@ mod tests {
         // Add items and track CIDs
         for i in 0..5 {
             let content = TestContent {
-                id: format!("test-{}", i),
-                data: format!("Data {}", i),
+                id: format!("test-{i}"),
+                data: format!("Data {i}"),
             };
             let chained = chain.append(content).unwrap();
             cids.push(chained.cid.clone());
