@@ -7,7 +7,6 @@ use crate::{
     content_types::{
         MarkdownDocument,
         VideoMetadata,
-        DocumentMetadata,
     },
     Error, Result,
 };
@@ -670,6 +669,7 @@ pub mod validation {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::content_types::DocumentMetadata;
     
     #[test]
     fn test_markdown_to_html() {

@@ -45,6 +45,7 @@ tempfile = "3.8"
 rand = "0.8"
 base64 = "0.22"
 chrono = { version = "0.4", features = ["serde"] }
+criterion = { version = "0.5", features = ["html_reports"] }
 
 [features]
 default = []
@@ -52,6 +53,7 @@ default = []
 [[bench]]
 name = "performance_bench"
 harness = false
+
 
 [[example]]
 name = "basic_usage"
@@ -68,3 +70,7 @@ path = "examples/ipld_codecs_demo.rs"
 [[example]]
 name = "transformation_demo"
 path = "examples/transformation_demo.rs"
+
+[[example]]
+name = "content_types_demo"
+path = "examples/content_types_demo.rs"

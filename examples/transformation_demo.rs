@@ -1,184 +1,188 @@
-//! Demonstrates content transformation capabilities in cim-ipld
+//! Content Transformation Demonstration
+//!
+//! This example showcases content transformation capabilities in CIM-IPLD
 
 use cim_ipld::{
-    content_types::{
-        transformers::{document, image, audio, video},
-        MarkdownDocument, JpegImage, PngImage, Mp3Audio,
-        DocumentMetadata, ImageMetadata, AudioMetadata,
-    },
-    Result,
+    MarkdownDocument, DocumentMetadata,
+    CodecOperations,
 };
 
-#[tokio::main]
-async fn main() -> Result<()> {
-    println!("=== CIM-IPLD Content Transformation Demo ===\n");
-
-    // Demo 1: Markdown to HTML transformation
-    demo_markdown_to_html()?;
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    println!("=== Content Transformation Demo ===\n");
     
-    // Demo 2: Markdown to plain text
-    demo_markdown_to_text()?;
+    // Markdown transformations
+    demo_markdown_transformations()?;
     
-    // Demo 3: Image format conversion
-    demo_image_conversion()?;
+    // Metadata enrichment
+    demo_metadata_enrichment()?;
     
-    // Demo 4: Audio metadata extraction
-    demo_audio_metadata()?;
+    // Format conversions
+    demo_format_conversions()?;
     
-    // Demo 5: Video metadata extraction
-    demo_video_metadata()?;
-
     Ok(())
 }
 
-fn demo_markdown_to_html() -> Result<()> {
-    println!("--- Demo 1: Markdown to HTML ---");
+fn demo_markdown_transformations() -> Result<(), Box<dyn std::error::Error>> {
+    println!("1. Markdown Transformations:");
     
     let markdown = MarkdownDocument {
-        content: r#"# Welcome to CIM-IPLD
+        content: r#"# Technical Documentation
 
-This is a **bold** statement about our *amazing* transformation capabilities.
-
-## Features
-
-- Markdown to HTML conversion
-- Image format transformation
-- Audio/Video metadata extraction
+## Introduction
+This is a **technical** document with various elements:
 
 ### Code Example
-
 ```rust
-let result = transform_content(input)?;
-println!("Transformed: {:?}", result);
+fn main() {
+    println!("Hello, IPLD!");
+}
 ```
 
-Visit [our website](https://example.com) for more info!"#.to_string(),
+### Features
+- Content addressing
+- Cryptographic integrity
+- Type safety
+
+### Links
+- [CIM Architecture](https://github.com/thecowboyai/alchemist)
+- [IPLD Spec](https://ipld.io/)
+"#.to_string(),
         metadata: DocumentMetadata {
-            title: Some("CIM-IPLD Demo".to_string()),
-            author: Some("CIM Team".to_string()),
+            title: Some("Technical Documentation".to_string()),
+            author: Some("Tech Writer".to_string()),
+            tags: vec!["documentation".to_string(), "technical".to_string()],
             ..Default::default()
         },
     };
     
-    let html = document::markdown_to_html(&markdown)?;
-    println!("Original Markdown (first 100 chars):");
-    println!("{&markdown.content[..100.min(markdown.content.len(}"))]);
-    println!("\nConverted HTML (first 200 chars):");
-    println!("{&html[..200.min(html.len(}"))]);
-    println!();
+    println!("  Original markdown:");
+    println!("    Title: {:?}", markdown.metadata.title);
+    println!("    Content length: {} bytes", markdown.content.len());
+    println!("    Preview: {}", &markdown.content[..100.min(markdown.content.len())]);
     
-    Ok(())
-}
-
-fn demo_markdown_to_text() -> Result<()> {
-    println!("--- Demo 2: Markdown to Plain Text ---");
+    // Simulate transformation to extract headers
+    let headers = extract_markdown_headers(&markdown.content);
+    println!("\n  Extracted headers:");
+    for (level, text) in headers {
+        println!("    {}{} {}", " ".repeat(level - 1), "#".repeat(level), text);
+    }
     
-    let markdown_content = "# Title\n\nThis is **bold** and *italic* text with a [link](https://example.com).";
-    
-    let plain_text = document::to_plain_text(markdown_content)?;
-    
-    println!("Original: {markdown_content}");
-    println!("Plain text: {plain_text}");
-    println!();
-    
-    Ok(())
-}
-
-fn demo_image_conversion() -> Result<()> {
-    println!("--- Demo 3: Image Format Conversion ---");
-    
-    // Create a simple test image (1x1 red pixel PNG)
-    let png_data = vec![
-        0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, // PNG signature
-        0x00, 0x00, 0x00, 0x0D, // IHDR chunk size
-        0x49, 0x48, 0x44, 0x52, // IHDR
-        0x00, 0x00, 0x00, 0x01, // width = 1
-        0x00, 0x00, 0x00, 0x01, // height = 1
-        0x08, 0x02, 0x00, 0x00, 0x00, // 8-bit RGB
-        0x90, 0x77, 0x53, 0xDE, // CRC
-        0x00, 0x00, 0x00, 0x0C, // IDAT chunk size
-        0x49, 0x44, 0x41, 0x54, // IDAT
-        0x08, 0xD7, 0x63, 0xF8, 0xCF, 0xC0, 0x00, 0x00, 0x03, 0x01, 0x01, 0x00,
-        0x18, 0xDD, 0x8D, 0xB4, // CRC
-        0x00, 0x00, 0x00, 0x00, // IEND chunk size
-        0x49, 0x45, 0x4E, 0x44, // IEND
-        0xAE, 0x42, 0x60, 0x82, // CRC
-    ];
-    
-    println!("Original PNG size: {png_data.len(} bytes"));
-    
-    // Convert to JPEG
-    match image::convert_format(&png_data, "png", "jpeg", Some(90)) {
-        Ok(jpeg_data) => {
-            println!("Converted to JPEG, size: {jpeg_data.len(} bytes"));
-        }
-        Err(e) => {
-            println!("Note: Image conversion requires valid image data");
-            println!("Error: {e}");
-        }
+    // Simulate transformation to extract links
+    let links = extract_markdown_links(&markdown.content);
+    println!("\n  Extracted links:");
+    for (text, url) in links {
+        println!("    [{}] -> {}", text, url);
     }
     
     println!();
     Ok(())
 }
 
-fn demo_audio_metadata() -> Result<()> {
-    println!("--- Demo 4: Audio Metadata Extraction ---");
+fn demo_metadata_enrichment() -> Result<(), Box<dyn std::error::Error>> {
+    println!("2. Metadata Enrichment:");
     
-    // Create a minimal MP3 header for demonstration
-    let mp3_data = vec![
-        0x49, 0x44, 0x33, // ID3 tag
-        0x03, 0x00, // Version
-        0x00, // Flags
-        0x00, 0x00, 0x00, 0x0A, // Size
-        // Minimal ID3 data
-        0x00, 0x00, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0x00, 0x00, 0x00,
-    ];
+    let mut doc = MarkdownDocument {
+        content: "# Simple Document\n\nThis is a simple document.".to_string(),
+        metadata: DocumentMetadata {
+            title: Some("Simple Document".to_string()),
+            ..Default::default()
+        },
+    };
     
-    match audio::extract_metadata(&mp3_data, "mp3") {
-        Ok(metadata) => {
-            println!("Extracted metadata:");
-            println!("  Codec: {:?}", metadata.codec);
-            println!("  Duration: {:?} ms", metadata.duration_ms);
-            println!("  Sample rate: {:?} Hz", metadata.sample_rate);
-            println!("  Channels: {:?}", metadata.channels);
-        }
-        Err(e) => {
-            println!("Note: Full metadata extraction requires valid audio files");
-            println!("Error: {e}");
-        }
-    }
+    println!("  Original metadata:");
+    println!("    {:?}", doc.metadata);
+    
+    // Enrich metadata
+    let word_count = count_words(&doc.content);
+    doc.metadata.language = Some("en".to_string());
+    doc.metadata.tags = vec!["auto-tagged".to_string(), "simple".to_string()];
+    doc.metadata.created_at = Some(chrono::Utc::now().timestamp() as u64);
+    
+    println!("\n  Enriched metadata:");
+    println!("    Word count: {}", word_count);
+    println!("    Language: {:?}", doc.metadata.language);
+    println!("    Tags: {:?}", doc.metadata.tags);
+    println!("    Created: {:?}", doc.metadata.created_at);
     
     println!();
     Ok(())
 }
 
-fn demo_video_metadata() -> Result<()> {
-    println!("--- Demo 5: Video Metadata Extraction ---");
+fn demo_format_conversions() -> Result<(), Box<dyn std::error::Error>> {
+    println!("3. Format Conversions:");
     
-    // Create a minimal MP4 header structure
-    let mp4_data = vec![
-        0x00, 0x00, 0x00, 0x20, // Box size (32 bytes)
-        b'f', b't', b'y', b'p', // Box type: ftyp
-        b'i', b's', b'o', b'm', // Major brand
-        0x00, 0x00, 0x00, 0x00, // Minor version
-        b'i', b's', b'o', b'm', // Compatible brands
-        b'i', b's', b'o', b'2',
-        b'a', b'v', b'c', b'1',
-        b'm', b'p', b'4', b'1',
-    ];
+    // Create a document
+    let doc = MarkdownDocument {
+        content: "# Title\n\nContent goes here.".to_string(),
+        metadata: DocumentMetadata {
+            title: Some("Conversion Example".to_string()),
+            author: Some("Demo Author".to_string()),
+            ..Default::default()
+        },
+    };
     
-    let metadata = video::extract_metadata(&mp4_data, "mp4")?;
+    // Convert to different encodings
+    let json = doc.to_dag_json()?;
+    let cbor = doc.to_dag_cbor()?;
+    let pretty = doc.to_dag_json_pretty()?;
     
-    println!("Extracted metadata:");
-    println!("  Video codec: {:?}", metadata.video_codec);
-    println!("  Audio codec: {:?}", metadata.audio_codec);
-    println!("  Duration: {:?} ms", metadata.duration_ms);
-    println!("  Resolution: {metadata.width.unwrap_or(0}x{}"), 
-        metadata.height.unwrap_or(0)
+    println!("  Original document: {} bytes", doc.content.len());
+    println!("  DAG-JSON encoded: {} bytes", json.len());
+    println!("  DAG-CBOR encoded: {} bytes", cbor.len());
+    println!("  Compression ratio: {:.1}%", 
+        (cbor.len() as f64 / json.len() as f64) * 100.0
     );
-    println!("  Tags: {:?}", metadata.tags);
+    
+    println!("\n  Pretty JSON (first 200 chars):");
+    println!("{}", &pretty[..200.min(pretty.len())]);
+    
+    // Simulate conversion to plain text
+    let plain_text = markdown_to_plain(&doc.content);
+    println!("\n  Plain text conversion:");
+    println!("    {}", plain_text);
     
     Ok(())
-} 
+}
+
+// Helper functions
+
+fn extract_markdown_headers(content: &str) -> Vec<(usize, String)> {
+    content.lines()
+        .filter_map(|line| {
+            if line.starts_with('#') {
+                let level = line.chars().take_while(|&c| c == '#').count();
+                let text = line[level..].trim().to_string();
+                Some((level, text))
+            } else {
+                None
+            }
+        })
+        .collect()
+}
+
+fn extract_markdown_links(content: &str) -> Vec<(String, String)> {
+    let re = regex::Regex::new(r"\[([^\]]+)\]\(([^)]+)\)").unwrap();
+    re.captures_iter(content)
+        .map(|cap| (cap[1].to_string(), cap[2].to_string()))
+        .collect()
+}
+
+fn count_words(content: &str) -> u32 {
+    content.split_whitespace().count() as u32
+}
+
+fn markdown_to_plain(content: &str) -> String {
+    // Simple conversion: remove markdown syntax
+    content
+        .lines()
+        .map(|line| {
+            line.trim_start_matches('#')
+                .trim()
+                .replace("**", "")
+                .replace("*", "")
+                .replace("`", "")
+        })
+        .filter(|line| !line.is_empty())
+        .collect::<Vec<_>>()
+        .join(" ")
+}

@@ -1,192 +1,248 @@
-//! Example of proper CID calculation for domain events
+//! Event CID Generation Example
 //!
-//! This example demonstrates how to implement the `canonical_payload` method
-//! to ensure that only the actual event data is used for CID calculation,
-//! excluding transient metadata like timestamps, UUIDs, and correlation IDs.
+//! This example demonstrates how to create events with Content Identifiers (CIDs)
+//! and work with event chains in CIM-IPLD.
 
-use cim_ipld::{ContentType, Result, TypedContent};
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
-use std::collections::HashMap;
+use cim_ipld::{
+    ContentChain, TypedContent, ContentType,
+    DagJsonCodec, Cid,
+};
+use serde::{Deserialize, Serialize};
+use std::time::{SystemTime, UNIX_EPOCH};
 
-/// A domain event with both payload and metadata
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct DomainEvent {
-    // Metadata that changes per message
-    pub event_id: String,
-    pub timestamp: String,
-    pub correlation_id: Option<String>,
-    pub causation_id: Option<String>,
-
-    // The actual event payload
-    pub event_type: String,
-    pub aggregate_id: String,
-    pub payload: EventPayload,
+/// A simple event structure
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+struct Event {
+    id: String,
+    event_type: String,
+    payload: serde_json::Value,
+    timestamp: u64,
 }
 
-/// The actual event data
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(tag = "type")]
-pub enum EventPayload {
-    UserCreated {
-        username: String,
-        email: String,
-    },
-    UserUpdated {
-        changes: HashMap<String, String>,
-    },
-    OrderPlaced {
-        items: Vec<OrderItem>,
-        total_amount: f64,
-    },
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct OrderItem {
-    pub product_id: String,
-    pub quantity: u32,
-    pub price: f64,
-}
-
-impl TypedContent for DomainEvent {
-    const CODEC: u64 = 0x71; // dag-cbor
-    const CONTENT_TYPE: ContentType = ContentType::Custom(0x1000);
-
-    /// Extract only the stable payload for CID calculation
-    fn canonical_payload(&self) -> Result<Vec<u8>> {
-        // Create a canonical representation with only stable fields
-        let canonical = CanonicalEvent {
-            event_type: &self.event_type,
-            aggregate_id: &self.aggregate_id,
-            payload: &self.payload,
-        };
-
-        // Serialize the canonical form
-        Ok(serde_json::to_vec(&canonical)?)
+impl Event {
+    fn new(id: &str, event_type: &str, payload: serde_json::Value) -> Self {
+        let timestamp = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs();
+            
+        Event {
+            id: id.to_string(),
+            event_type: event_type.to_string(),
+            payload,
+            timestamp,
+        }
     }
 }
 
-/// Internal struct for canonical serialization
-#[derive(Serialize)]
-struct CanonicalEvent<'a> {
-    event_type: &'a str,
-    aggregate_id: &'a str,
-    payload: &'a EventPayload,
+impl TypedContent for Event {
+    const CODEC: u64 = 0x0129; // DAG-JSON
+    const CONTENT_TYPE: ContentType = ContentType::Json;
 }
 
-/// Example of a content wrapper that extracts payload
+/// A message wrapper around events
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct MessageEnvelope<T> {
-    // Message metadata
-    pub message_id: String,
-    pub sent_at: String,
-    pub sender: String,
-    pub headers: HashMap<String, String>,
-
-    // The actual content
-    pub content: T,
+struct EventMessage {
+    event: Event,
+    source: String,
+    correlation_id: String,
 }
 
-impl<T: Serialize + Clone> MessageEnvelope<T> {
-    /// Extract just the content for CID calculation
-    pub fn content_bytes(&self) -> Result<Vec<u8>> {
-        Ok(serde_json::to_vec(&self.content)?)
-    }
+impl TypedContent for EventMessage {
+    const CODEC: u64 = 0x0129; // DAG-JSON
+    const CONTENT_TYPE: ContentType = ContentType::Json;
 }
 
-impl<T: Serialize + DeserializeOwned + Send + Sync + Clone> TypedContent for MessageEnvelope<T> {
-    const CODEC: u64 = 0x71;
-    const CONTENT_TYPE: ContentType = ContentType::Custom(0x2000);
-
-    fn canonical_payload(&self) -> Result<Vec<u8>> {
-        // Only use the content, not the envelope metadata
-        self.content_bytes()
-    }
-}
-
-fn main() -> Result<()> {
-    // Example 1: Two events with same payload but different metadata
-    let event1 = DomainEvent {
-        event_id: "evt_123".to_string(),
-        timestamp: "2024-01-01T10:00:00Z".to_string(),
-        correlation_id: Some("corr_456".to_string()),
-        causation_id: None,
-        event_type: "UserCreated".to_string(),
-        aggregate_id: "user_789".to_string(),
-        payload: EventPayload::UserCreated {
-            username: "alice".to_string(),
-            email: "alice@example.com".to_string(),
-        },
-    };
-
-    let event2 = DomainEvent {
-        event_id: "evt_999".to_string(),               // Different ID
-        timestamp: "2024-01-02T15:30:00Z".to_string(), // Different timestamp
-        correlation_id: Some("corr_888".to_string()),  // Different correlation
-        causation_id: Some("cause_777".to_string()),
-        event_type: "UserCreated".to_string(),
-        aggregate_id: "user_789".to_string(),
-        payload: EventPayload::UserCreated {
-            username: "alice".to_string(),
-            email: "alice@example.com".to_string(),
-        },
-    };
-
-    // Calculate CIDs
-    let cid1 = event1.calculate_cid()?;
-    let cid2 = event2.calculate_cid()?;
-
-    println!("Event 1 CID: {cid1}");
-    println!("Event 2 CID: {cid2}");
-    println!("CIDs are equal: {cid1 == cid2}");
-    println!("✓ Same payload produces same CID despite different metadata\n");
-
-    // Example 2: Different payloads produce different CIDs
-    let event3 = DomainEvent {
-        event_id: "evt_321".to_string(),
-        timestamp: "2024-01-01T10:00:00Z".to_string(),
-        correlation_id: None,
-        causation_id: None,
-        event_type: "UserCreated".to_string(),
-        aggregate_id: "user_789".to_string(),
-        payload: EventPayload::UserCreated {
-            username: "bob".to_string(), // Different username
-            email: "bob@example.com".to_string(),
-        },
-    };
-
-    let cid3 = event3.calculate_cid()?;
-    println!("Event 3 CID: {cid3}");
-    println!("CID1 != CID3: {cid1 != cid3}");
-    println!("✓ Different payload produces different CID\n");
-
-    // Example 3: Message envelope
-    let message1 = MessageEnvelope {
-        message_id: "msg_001".to_string(),
-        sent_at: "2024-01-01T10:00:00Z".to_string(),
-        sender: "service-a".to_string(),
-        headers: vec![("trace-id".to_string(), "trace_123".to_string())]
-            .into_iter()
-            .collect(),
-        content: "Important business data".to_string(),
-    };
-
-    let message2 = MessageEnvelope {
-        message_id: "msg_002".to_string(),           // Different message ID
-        sent_at: "2024-01-02T15:00:00Z".to_string(), // Different time
-        sender: "service-b".to_string(),             // Different sender
-        headers: vec![("trace-id".to_string(), "trace_999".to_string())]
-            .into_iter()
-            .collect(),
-        content: "Important business data".to_string(), // Same content!
-    };
-
-    let msg_cid1 = message1.calculate_cid()?;
-    let msg_cid2 = message2.calculate_cid()?;
-
-    println!("Message 1 CID: {msg_cid1}");
-    println!("Message 2 CID: {msg_cid2}");
-    println!("Message CIDs are equal: {msg_cid1 == msg_cid2}");
-    println!("✓ Same content produces same CID despite different envelope metadata");
-
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    println!("=== Event CID Generation Example ===\n");
+    
+    // Example 1: Basic event CID generation
+    basic_event_cid()?;
+    
+    // Example 2: Event chain demonstration
+    event_chain_demo()?;
+    
+    // Example 3: CID comparison
+    cid_comparison()?;
+    
+    // Example 4: Event messages with CIDs
+    event_message_demo()?;
+    
     Ok(())
+}
+
+fn basic_event_cid() -> Result<(), Box<dyn std::error::Error>> {
+    println!("1. Basic Event CID Generation:");
+    
+    let event = Event::new(
+        "evt-001",
+        "user.created",
+        serde_json::json!({
+            "user_id": "usr-123",
+            "email": "user@example.com",
+            "name": "Test User"
+        })
+    );
+    
+    // Generate CID for the event
+    let cid = generate_cid(&event)?;
+    
+    println!("  Event: {:?}", event.id);
+    println!("  Type: {}", event.event_type);
+    println!("  CID: {}", cid);
+    
+    // Show that same content produces same CID
+    let cid2 = generate_cid(&event)?;
+    println!("  Same content, same CID: {}\n", cid == cid2);
+    
+    Ok(())
+}
+
+fn event_chain_demo() -> Result<(), Box<dyn std::error::Error>> {
+    println!("2. Event Chain Demonstration:");
+    
+    let mut chain = ContentChain::new();
+    
+    // Create a series of related events
+    let events = vec![
+        Event::new(
+            "evt-001",
+            "order.created",
+            serde_json::json!({"order_id": "ord-123", "total": 99.99})
+        ),
+        Event::new(
+            "evt-002",
+            "order.payment_received",
+            serde_json::json!({"order_id": "ord-123", "amount": 99.99})
+        ),
+        Event::new(
+            "evt-003",
+            "order.shipped",
+            serde_json::json!({"order_id": "ord-123", "tracking": "TRK-456"})
+        ),
+    ];
+    
+    println!("  Creating event chain:");
+    for event in events {
+        let chained = chain.append(event.clone())?;
+        println!("    {} -> CID: {}", event.event_type, chained.cid);
+        if let Some(prev) = &chained.previous_cid {
+            println!("      Previous: {}", prev);
+        }
+    }
+    
+    // Validate the chain
+    chain.validate()?;
+    println!("  ✓ Chain validated successfully");
+    println!("  Chain length: {}\n", chain.len());
+    
+    Ok(())
+}
+
+fn cid_comparison() -> Result<(), Box<dyn std::error::Error>> {
+    println!("3. CID Comparison:");
+    
+    // Same content, same CID
+    let event1 = Event {
+        id: "evt-001".to_string(),
+        event_type: "test.event".to_string(),
+        payload: serde_json::json!({"value": 42}),
+        timestamp: 1704067200,
+    };
+    
+    let event2 = Event {
+        id: "evt-001".to_string(),
+        event_type: "test.event".to_string(),
+        payload: serde_json::json!({"value": 42}),
+        timestamp: 1704067200,
+    };
+    
+    let cid1 = generate_cid(&event1)?;
+    let cid2 = generate_cid(&event2)?;
+    
+    println!("  Same content:");
+    println!("    CID1: {}", cid1);
+    println!("    CID2: {}", cid2);
+    println!("    Equal: {}", cid1 == cid2);
+    
+    // Different content, different CID
+    let event3 = Event {
+        id: "evt-002".to_string(), // Different ID
+        event_type: "test.event".to_string(),
+        payload: serde_json::json!({"value": 42}),
+        timestamp: 1704067200,
+    };
+    
+    let cid3 = generate_cid(&event3)?;
+    
+    println!("\n  Different content:");
+    println!("    CID1: {}", cid1);
+    println!("    CID3: {}", cid3);
+    println!("    Equal: {}\n", cid1 == cid3);
+    
+    Ok(())
+}
+
+fn event_message_demo() -> Result<(), Box<dyn std::error::Error>> {
+    println!("4. Event Messages with CIDs:");
+    
+    let event = Event::new(
+        "evt-001",
+        "system.alert",
+        serde_json::json!({
+            "level": "warning",
+            "message": "High memory usage detected"
+        })
+    );
+    
+    let message = EventMessage {
+        event: event.clone(),
+        source: "monitoring-service".to_string(),
+        correlation_id: "corr-123".to_string(),
+    };
+    
+    // Generate CIDs for both event and message
+    let event_cid = generate_cid(&event)?;
+    let message_cid = generate_cid(&message)?;
+    
+    println!("  Event CID: {}", event_cid);
+    println!("  Message CID: {}", message_cid);
+    println!("  Different CIDs: {}", event_cid != message_cid);
+    
+    // Create another message with same event
+    let message2 = EventMessage {
+        event: event.clone(),
+        source: "monitoring-service".to_string(),
+        correlation_id: "corr-456".to_string(), // Different correlation ID
+    };
+    
+    let message_cid2 = generate_cid(&message2)?;
+    
+    println!("\n  Same event, different correlation:");
+    println!("    Message CID 1: {}", message_cid);
+    println!("    Message CID 2: {}", message_cid2);
+    println!("    Different: {}", message_cid != message_cid2);
+    
+    Ok(())
+}
+
+/// Helper function to generate CID for any serializable content
+fn generate_cid<T: Serialize>(content: &T) -> Result<Cid, Box<dyn std::error::Error>> {
+    // Encode with DAG-JSON
+    let encoded = DagJsonCodec::encode(content)?;
+    
+    // Hash with BLAKE3
+    let hash = blake3::hash(&encoded);
+    let hash_bytes = hash.as_bytes();
+    
+    // Create multihash with BLAKE3 code (0x1e)
+    let mut multihash_bytes = Vec::new();
+    multihash_bytes.push(0x1e); // BLAKE3-256 code
+    multihash_bytes.push(hash_bytes.len() as u8);
+    multihash_bytes.extend_from_slice(hash_bytes);
+    
+    let mh = multihash::Multihash::from_bytes(&multihash_bytes)?;
+    let cid = Cid::new_v1(0x0129, mh); // 0x0129 is DAG-JSON codec
+    
+    Ok(cid)
 }
