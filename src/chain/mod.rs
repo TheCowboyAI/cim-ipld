@@ -320,6 +320,171 @@ mod tests {
     }
 
     #[test]
+    fn test_empty_chain_operations() {
+        let chain = ContentChain::<TestContent>::new();
+        
+        assert!(chain.is_empty());
+        assert_eq!(chain.len(), 0);
+        assert!(chain.head().is_none());
+        assert!(chain.validate().is_ok());
+        assert!(chain.items_since("invalid-cid").is_err());
+    }
+
+    #[test]
+    fn test_chain_with_single_item() {
+        let mut chain = ContentChain::new();
+        let content = TestContent {
+            id: "single".to_string(),
+            data: "only item".to_string(),
+        };
+        
+        chain.append(content.clone()).unwrap();
+        
+        assert!(!chain.is_empty());
+        assert_eq!(chain.len(), 1);
+        assert!(chain.head().is_some());
+        assert_eq!(chain.head().unwrap().sequence, 0);
+        assert!(chain.head().unwrap().previous_cid.is_none());
+        assert!(chain.validate().is_ok());
+    }
+
+    #[test]
+    fn test_invalid_cid_parsing() {
+        // Test various invalid CID formats
+        assert!(ChainedContent::<TestContent>::parse_cid("").is_err());
+        assert!(ChainedContent::<TestContent>::parse_cid("not-a-cid").is_err());
+        assert!(ChainedContent::<TestContent>::parse_cid("123456").is_err());
+        assert!(ChainedContent::<TestContent>::parse_cid("Qm...").is_err()); // Invalid V0 CID
+    }
+
+    #[test]
+    fn test_items_since_edge_cases() {
+        let mut chain = ContentChain::new();
+        
+        // Add multiple items
+        for i in 0..5 {
+            chain.append(TestContent {
+                id: format!("item-{}", i),
+                data: format!("data-{}", i),
+            }).unwrap();
+        }
+        
+        // Test with head CID (should return empty)
+        let head_cid = &chain.head().unwrap().cid;
+        let items = chain.items_since(head_cid).unwrap();
+        assert_eq!(items.len(), 0);
+        
+        // Test with first CID (should return all but first)
+        let first_cid = &chain.items()[0].cid;
+        let items = chain.items_since(first_cid).unwrap();
+        assert_eq!(items.len(), 4);
+        
+        // Test with non-existent CID
+        assert!(chain.items_since("non-existent-cid").is_err());
+    }
+
+    #[test]
+    fn test_chain_validation_with_wrong_codec() {
+        // Create content with one codec
+        let content = TestContent {
+            id: "test".to_string(),
+            data: "data".to_string(),
+        };
+        
+        let item1 = ChainedContent::new(content.clone(), None).unwrap();
+        
+        // Try to create next item with wrong previous CID calculation
+        let mut item2 = ChainedContent::new(content, Some(&item1)).unwrap();
+        
+        // Tamper with the previous CID
+        item2.previous_cid = Some("wrong-cid".to_string());
+        
+        // Validation should fail
+        assert!(item2.validate_chain(Some(&item1)).is_err());
+    }
+
+    #[test]
+    fn test_large_chain_performance() {
+        let mut chain = ContentChain::new();
+        
+        // Add many items
+        for i in 0..100 {
+            chain.append(TestContent {
+                id: format!("item-{}", i),
+                data: format!("Large data content for item {}: {}", i, "x".repeat(100)),
+            }).unwrap();
+        }
+        
+        assert_eq!(chain.len(), 100);
+        assert!(chain.validate().is_ok());
+        
+        // Test items_since with middle item
+        let mid_cid = &chain.items()[50].cid;
+        let items = chain.items_since(mid_cid).unwrap();
+        assert_eq!(items.len(), 49);
+    }
+
+    #[test]
+    fn test_chain_default_trait() {
+        let chain1 = ContentChain::<TestContent>::new();
+        let chain2 = ContentChain::<TestContent>::default();
+        
+        assert_eq!(chain1.len(), chain2.len());
+        assert_eq!(chain1.is_empty(), chain2.is_empty());
+    }
+
+    #[test]
+    fn test_content_with_special_characters() {
+        let mut chain = ContentChain::new();
+        
+        // Test with various special characters
+        let special_contents = vec![
+            TestContent {
+                id: "emoji".to_string(),
+                data: "🚀 Rocket emoji and 中文 Chinese text".to_string(),
+            },
+            TestContent {
+                id: "newlines".to_string(),
+                data: "Line 1\nLine 2\r\nLine 3\tTabbed".to_string(),
+            },
+            TestContent {
+                id: "quotes".to_string(),
+                data: r#"Single ' and double " quotes"#.to_string(),
+            },
+            TestContent {
+                id: "null".to_string(),
+                data: "\0Null byte\0".to_string(),
+            },
+        ];
+        
+        for content in special_contents {
+            let result = chain.append(content);
+            assert!(result.is_ok());
+        }
+        
+        assert_eq!(chain.len(), 4);
+        assert!(chain.validate().is_ok());
+    }
+
+    #[test]
+    fn test_cid_consistency_across_serialization() {
+        let content = TestContent {
+            id: "consistent".to_string(),
+            data: "Should have same CID".to_string(),
+        };
+        
+        // Create multiple chained items with same content
+        let item1 = ChainedContent::new(content.clone(), None).unwrap();
+        let item2 = ChainedContent::new(content.clone(), None).unwrap();
+        
+        // They should have the same CID
+        assert_eq!(item1.cid, item2.cid);
+        
+        // But different timestamps mean they're not equal
+        assert_ne!(item1.timestamp, item2.timestamp);
+    }
+
+    #[test]
     fn test_chain_validation() {
         // Given
         let mut chain = ContentChain::new();

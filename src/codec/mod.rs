@@ -111,3 +111,227 @@ impl Default for CodecRegistry {
         Self::new()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // Test codec implementation
+    struct TestCodec {
+        code: u64,
+        name: String,
+    }
+
+    impl CimCodec for TestCodec {
+        fn code(&self) -> u64 {
+            self.code
+        }
+
+        fn name(&self) -> &str {
+            &self.name
+        }
+    }
+
+    #[test]
+    fn test_codec_registry_new() {
+        let registry = CodecRegistry::new();
+        
+        // Should have standard codecs pre-registered
+        assert!(registry.contains(0x71)); // dag-cbor
+        assert!(registry.contains(0x0129)); // dag-json
+        assert!(registry.contains(0x55)); // raw
+        
+        // Should have CIM-specific codecs
+        assert!(registry.contains(0x340000)); // alchemist
+        assert!(registry.contains(0x340001)); // workflow-graph
+    }
+
+    #[test]
+    fn test_register_valid_codec() {
+        let mut registry = CodecRegistry::new();
+        let codec = Arc::new(TestCodec {
+            code: 0x300100,
+            name: "test-codec".to_string(),
+        });
+
+        assert!(registry.register(codec.clone()).is_ok());
+        assert!(registry.contains(0x300100));
+        
+        let retrieved = registry.get(0x300100).unwrap();
+        assert_eq!(retrieved.code(), 0x300100);
+        assert_eq!(retrieved.name(), "test-codec");
+    }
+
+    #[test]
+    fn test_register_invalid_codec_range() {
+        let mut registry = CodecRegistry::new();
+        
+        // Test below valid range
+        let codec1 = Arc::new(TestCodec {
+            code: 0x2FFFFF,
+            name: "below-range".to_string(),
+        });
+        match registry.register(codec1) {
+            Err(Error::InvalidCodecRange(code)) => assert_eq!(code, 0x2FFFFF),
+            _ => panic!("Expected InvalidCodecRange error"),
+        }
+
+        // Test above valid range
+        let codec2 = Arc::new(TestCodec {
+            code: 0x400000,
+            name: "above-range".to_string(),
+        });
+        match registry.register(codec2) {
+            Err(Error::InvalidCodecRange(code)) => assert_eq!(code, 0x400000),
+            _ => panic!("Expected InvalidCodecRange error"),
+        }
+    }
+
+    #[test]
+    fn test_register_boundary_codecs() {
+        let mut registry = CodecRegistry::new();
+        
+        // Test minimum valid codec
+        let min_codec = Arc::new(TestCodec {
+            code: 0x300000,
+            name: "min-codec".to_string(),
+        });
+        assert!(registry.register(min_codec).is_ok());
+        assert!(registry.contains(0x300000));
+
+        // Test maximum valid codec
+        let max_codec = Arc::new(TestCodec {
+            code: 0x3FFFFF,
+            name: "max-codec".to_string(),
+        });
+        assert!(registry.register(max_codec).is_ok());
+        assert!(registry.contains(0x3FFFFF));
+    }
+
+    #[test]
+    fn test_register_duplicate_codec() {
+        let mut registry = CodecRegistry::new();
+        
+        let codec1 = Arc::new(TestCodec {
+            code: 0x300200,
+            name: "original".to_string(),
+        });
+        assert!(registry.register(codec1).is_ok());
+
+        // Register duplicate (should overwrite)
+        let codec2 = Arc::new(TestCodec {
+            code: 0x300200,
+            name: "replacement".to_string(),
+        });
+        assert!(registry.register(codec2).is_ok());
+        
+        let retrieved = registry.get(0x300200).unwrap();
+        assert_eq!(retrieved.name(), "replacement");
+    }
+
+    #[test]
+    fn test_register_standard_codec() {
+        let mut registry = CodecRegistry::new();
+        
+        // Standard codecs don't have range validation
+        let standard = Arc::new(TestCodec {
+            code: 0x01, // Outside CIM range
+            name: "standard-codec".to_string(),
+        });
+        
+        assert!(registry.register_standard(standard).is_ok());
+        assert!(registry.contains(0x01));
+    }
+
+    #[test]
+    fn test_get_nonexistent_codec() {
+        let registry = CodecRegistry::new();
+        assert!(registry.get(0x999999).is_none());
+    }
+
+    #[test]
+    fn test_codes_method() {
+        let mut registry = CodecRegistry::new();
+        
+        // Add some custom codecs
+        let codec1 = Arc::new(TestCodec {
+            code: 0x300300,
+            name: "custom1".to_string(),
+        });
+        let codec2 = Arc::new(TestCodec {
+            code: 0x300301,
+            name: "custom2".to_string(),
+        });
+        
+        registry.register(codec1).unwrap();
+        registry.register(codec2).unwrap();
+        
+        let codes = registry.codes();
+        
+        // Should contain both standard and custom codecs
+        assert!(codes.contains(&0x71)); // dag-cbor
+        assert!(codes.contains(&0x300300)); // custom1
+        assert!(codes.contains(&0x300301)); // custom2
+        
+        // Should be sorted
+        let mut sorted = codes.clone();
+        sorted.sort_unstable();
+        assert_eq!(codes, sorted);
+        
+        // Should have no duplicates
+        let mut unique = codes.clone();
+        unique.dedup();
+        assert_eq!(codes.len(), unique.len());
+    }
+
+    #[test]
+    fn test_codec_trait_implementation() {
+        let codec = TestCodec {
+            code: 0x300400,
+            name: "trait-test".to_string(),
+        };
+        
+        assert_eq!(codec.code(), 0x300400);
+        assert_eq!(codec.name(), "trait-test");
+    }
+
+    #[test]
+    fn test_default_trait() {
+        let registry1 = CodecRegistry::new();
+        let registry2 = CodecRegistry::default();
+        
+        // Both should have the same standard codecs
+        assert_eq!(registry1.contains(0x71), registry2.contains(0x71));
+        assert_eq!(registry1.contains(0x0129), registry2.contains(0x0129));
+    }
+
+    #[test]
+    fn test_send_sync_bounds() {
+        fn assert_send_sync<T: Send + Sync>() {}
+        assert_send_sync::<CodecRegistry>();
+        assert_send_sync::<Arc<dyn CimCodec>>();
+    }
+
+    #[test]
+    fn test_standard_vs_custom_priority() {
+        let mut registry = CodecRegistry::new();
+        
+        // Register a standard codec
+        let standard = Arc::new(TestCodec {
+            code: 0x300500,
+            name: "standard-version".to_string(),
+        });
+        registry.register_standard(standard).unwrap();
+        
+        // Register a custom codec with same code
+        let custom = Arc::new(TestCodec {
+            code: 0x300500,
+            name: "custom-version".to_string(),
+        });
+        registry.register(custom).unwrap();
+        
+        // Custom should take priority
+        let retrieved = registry.get(0x300500).unwrap();
+        assert_eq!(retrieved.name(), "custom-version");
+    }
+}

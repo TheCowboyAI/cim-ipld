@@ -710,4 +710,219 @@ mod tests {
         assert_eq!(content_type_name(ContentType::Custom(codec::MP3)), "MP3 Audio");
         assert_eq!(content_type_name(ContentType::Custom(codec::MP4)), "MP4 Video");
     }
+
+    #[test]
+    fn test_docx_verification() {
+        // DOCX files start with PK (ZIP signature) followed by specific patterns
+        let valid_docx = b"PK\x03\x04\x14\x00\x00\x00";
+        assert!(DocxDocument::verify(valid_docx));
+        
+        let invalid_docx = b"Not a DOCX";
+        assert!(!DocxDocument::verify(invalid_docx));
+    }
+
+    #[test]
+    fn test_markdown_document() {
+        let doc = MarkdownDocument {
+            content: "# Hello\nThis is markdown".to_string(),
+            metadata: DocumentMetadata::default(),
+        };
+        assert_eq!(doc.content, "# Hello\nThis is markdown");
+    }
+
+    #[test]
+    fn test_text_document() {
+        let doc = TextDocument {
+            content: "Plain text content".to_string(),
+            metadata: DocumentMetadata::default(),
+        };
+        assert_eq!(doc.content, "Plain text content");
+    }
+
+    #[test]
+    fn test_jpeg_verification() {
+        let valid_jpeg = b"\xFF\xD8\xFF\xE0\x00\x10JFIF";
+        assert!(JpegImage::verify(valid_jpeg));
+        
+        let valid_jpeg2 = b"\xFF\xD8\xFF\xE1\x00\x10Exif";
+        assert!(JpegImage::verify(valid_jpeg2));
+        
+        let invalid_jpeg = b"Not a JPEG";
+        assert!(!JpegImage::verify(invalid_jpeg));
+    }
+
+    #[test]
+    fn test_png_verification() {
+        let valid_png = b"\x89PNG\r\n\x1a\n";
+        assert!(PngImage::verify(valid_png));
+        
+        let invalid_png = b"Not a PNG";
+        assert!(!PngImage::verify(invalid_png));
+    }
+
+    #[test]
+    fn test_gif_verification() {
+        let valid_gif87 = b"GIF87a";
+        assert!(GifImage::verify(valid_gif87));
+        
+        let valid_gif89 = b"GIF89a";
+        assert!(GifImage::verify(valid_gif89));
+        
+        let invalid_gif = b"Not a GIF";
+        assert!(!GifImage::verify(invalid_gif));
+    }
+
+    #[test]
+    fn test_webp_verification() {
+        // WebP has RIFF header with WEBP at bytes 8-12
+        let mut valid_webp = b"RIFF\x00\x00\x00\x00WEBP".to_vec();
+        valid_webp.push(0); // Make it at least 13 bytes
+        assert!(WebPImage::verify(&valid_webp));
+        
+        // Invalid: too short
+        let short_webp = b"RIFF";
+        assert!(!WebPImage::verify(short_webp));
+        
+        // Invalid: wrong format at bytes 8-12
+        let invalid_webp = b"RIFF\x00\x00\x00\x00WAVE";
+        assert!(!WebPImage::verify(invalid_webp));
+    }
+
+    #[test]
+    fn test_mp3_verification() {
+        // MP3 with ID3v2 tag
+        let valid_mp3_id3 = b"ID3\x03\x00\x00\x00";
+        assert!(Mp3Audio::verify(valid_mp3_id3));
+        
+        // MP3 with sync frame
+        let valid_mp3_sync = b"\xFF\xFB\x90\x00";
+        assert!(Mp3Audio::verify(valid_mp3_sync));
+        
+        let invalid_mp3 = b"Not an MP3";
+        assert!(!Mp3Audio::verify(invalid_mp3));
+    }
+
+    #[test]
+    fn test_wav_verification() {
+        let valid_wav = b"RIFF\x00\x00\x00\x00WAVEfmt ";
+        assert!(WavAudio::verify(valid_wav));
+        
+        let invalid_wav = b"Not a WAV";
+        assert!(!WavAudio::verify(invalid_wav));
+    }
+
+    #[test]
+    fn test_flac_verification() {
+        let valid_flac = b"fLaC\x00\x00\x00\x00";
+        assert!(FlacAudio::verify(valid_flac));
+        
+        let invalid_flac = b"Not a FLAC";
+        assert!(!FlacAudio::verify(invalid_flac));
+    }
+
+    #[test]
+    fn test_aac_verification() {
+        // AAC with ADTS header
+        let valid_aac = b"\xFF\xF1\x00\x00";
+        assert!(AacAudio::verify(valid_aac));
+        
+        let invalid_aac = b"Not an AAC";
+        assert!(!AacAudio::verify(invalid_aac));
+    }
+
+    #[test]
+    fn test_ogg_verification() {
+        let valid_ogg = b"OggS\x00\x02\x00\x00";
+        assert!(OggAudio::verify(valid_ogg));
+        
+        let invalid_ogg = b"Not an OGG";
+        assert!(!OggAudio::verify(invalid_ogg));
+    }
+
+    #[test]
+    fn test_mp4_verification() {
+        // MP4 with ftyp box
+        let valid_mp4 = b"\x00\x00\x00\x20ftypmp42";
+        assert!(Mp4Video::verify(valid_mp4));
+        
+        let invalid_mp4 = b"Not an MP4";
+        assert!(!Mp4Video::verify(invalid_mp4));
+    }
+
+    #[test]
+    fn test_mov_verification() {
+        // MOV with ftyp box and qt brand
+        let valid_mov = b"\x00\x00\x00\x14ftypqt  ";
+        assert!(MovVideo::verify(valid_mov));
+        
+        let invalid_mov = b"Not a MOV";
+        assert!(!MovVideo::verify(invalid_mov));
+    }
+
+    #[test]
+    fn test_mkv_verification() {
+        // MKV with EBML header
+        let valid_mkv = b"\x1A\x45\xDF\xA3";
+        assert!(MkvVideo::verify(valid_mkv));
+        
+        let invalid_mkv = b"Not an MKV";
+        assert!(!MkvVideo::verify(invalid_mkv));
+    }
+
+    #[test]
+    fn test_avi_verification() {
+        // AVI with RIFF header
+        let valid_avi = b"RIFF\x00\x00\x00\x00AVI LIST";
+        assert!(AviVideo::verify(valid_avi));
+        
+        let invalid_avi = b"Not an AVI";
+        assert!(!AviVideo::verify(invalid_avi));
+    }
+
+    #[test]
+    fn test_detect_content_type_comprehensive() {
+        // Test all supported formats
+        assert_eq!(detect_content_type(b"%PDF-"), Some(ContentType::Custom(codec::PDF)));
+        assert_eq!(detect_content_type(b"PK\x03\x04"), Some(ContentType::Custom(codec::DOCX)));
+        assert_eq!(detect_content_type(b"\xFF\xD8\xFF"), Some(ContentType::Custom(codec::JPEG)));
+        assert_eq!(detect_content_type(b"\x89PNG\r\n\x1a\n"), Some(ContentType::Custom(codec::PNG)));
+        assert_eq!(detect_content_type(b"GIF87a"), Some(ContentType::Custom(codec::GIF)));
+        assert_eq!(detect_content_type(b"RIFF\x00\x00\x00\x00WEBP\x00"), Some(ContentType::Custom(codec::WEBP)));
+        assert_eq!(detect_content_type(b"ID3"), Some(ContentType::Custom(codec::MP3)));
+        assert_eq!(detect_content_type(b"\xFF\xFB"), Some(ContentType::Custom(codec::MP3)));
+        assert_eq!(detect_content_type(b"RIFF\x00\x00\x00\x00WAVEfmt "), Some(ContentType::Custom(codec::WAV)));
+        assert_eq!(detect_content_type(b"fLaC"), Some(ContentType::Custom(codec::FLAC)));
+        assert_eq!(detect_content_type(b"\xFF\xF1"), Some(ContentType::Custom(codec::AAC)));
+        assert_eq!(detect_content_type(b"OggS"), Some(ContentType::Custom(codec::OGG)));
+        assert_eq!(detect_content_type(b"\x00\x00\x00\x20ftypmp42\x00\x00\x00\x00"), Some(ContentType::Custom(codec::MP4)));
+        assert_eq!(detect_content_type(b"\x00\x00\x00\x14ftypqt  \x00\x00\x00\x00"), Some(ContentType::Custom(codec::MOV)));
+        assert_eq!(detect_content_type(b"\x1A\x45\xDF\xA3"), Some(ContentType::Custom(codec::MKV)));
+        assert_eq!(detect_content_type(b"RIFF\x00\x00\x00\x00AVI LIST"), Some(ContentType::Custom(codec::AVI)));
+        
+        // Test unknown format
+        assert_eq!(detect_content_type(b"Unknown format"), None);
+    }
+
+    #[test]
+    fn test_content_type_names_comprehensive() {
+        // Test all content type names
+        assert_eq!(content_type_name(ContentType::Custom(codec::PDF)), "PDF Document");
+        assert_eq!(content_type_name(ContentType::Custom(codec::DOCX)), "DOCX Document");
+        assert_eq!(content_type_name(ContentType::Custom(codec::MARKDOWN)), "Markdown Document");
+        assert_eq!(content_type_name(ContentType::Custom(codec::TEXT)), "Text Document");
+        assert_eq!(content_type_name(ContentType::Custom(codec::JPEG)), "JPEG Image");
+        assert_eq!(content_type_name(ContentType::Custom(codec::PNG)), "PNG Image");
+        assert_eq!(content_type_name(ContentType::Custom(codec::GIF)), "GIF Image");
+        assert_eq!(content_type_name(ContentType::Custom(codec::WEBP)), "WebP Image");
+        assert_eq!(content_type_name(ContentType::Custom(codec::MP3)), "MP3 Audio");
+        assert_eq!(content_type_name(ContentType::Custom(codec::WAV)), "WAV Audio");
+        assert_eq!(content_type_name(ContentType::Custom(codec::FLAC)), "FLAC Audio");
+        assert_eq!(content_type_name(ContentType::Custom(codec::AAC)), "AAC Audio");
+        assert_eq!(content_type_name(ContentType::Custom(codec::OGG)), "OGG Audio");
+        assert_eq!(content_type_name(ContentType::Custom(codec::MP4)), "MP4 Video");
+        assert_eq!(content_type_name(ContentType::Custom(codec::MOV)), "MOV Video");
+        assert_eq!(content_type_name(ContentType::Custom(codec::MKV)), "MKV Video");
+        assert_eq!(content_type_name(ContentType::Custom(codec::AVI)), "AVI Video");
+        assert_eq!(content_type_name(ContentType::Custom(0x999999)), "Unknown");
+    }
 } 
