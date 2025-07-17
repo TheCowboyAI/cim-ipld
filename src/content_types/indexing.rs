@@ -7,6 +7,7 @@ use crate::{
     content_types::{
         DocumentMetadata, ImageMetadata, AudioMetadata, VideoMetadata,
         ContentType, codec,
+        persistence::IndexPersistence,
     },
     Result,
 };
@@ -38,7 +39,6 @@ mod cid_serde {
 }
 
 /// Main content indexing service
-#[derive(Default)]
 pub struct ContentIndex {
     /// Inverted index for text search
     text_index: Arc<RwLock<TextIndex>>,
@@ -48,6 +48,8 @@ pub struct ContentIndex {
     type_index: Arc<RwLock<TypeIndex>>,
     /// Metadata cache
     metadata_cache: Arc<RwLock<MetadataCache>>,
+    /// Persistence layer
+    persistence: Option<Arc<IndexPersistence>>,
 }
 
 /// Text search index using inverted index structure
@@ -147,7 +149,72 @@ impl ContentIndex {
             tag_index: Arc::new(RwLock::new(TagIndex::default())),
             type_index: Arc::new(RwLock::new(TypeIndex::default())),
             metadata_cache: Arc::new(RwLock::new(MetadataCache::default())),
+            persistence: None,
         }
+    }
+
+    /// Create a new content index with persistence
+    pub fn with_persistence(persistence: Arc<IndexPersistence>) -> Self {
+        Self {
+            text_index: Arc::new(RwLock::new(TextIndex::default())),
+            tag_index: Arc::new(RwLock::new(TagIndex::default())),
+            type_index: Arc::new(RwLock::new(TypeIndex::default())),
+            metadata_cache: Arc::new(RwLock::new(MetadataCache::default())),
+            persistence: Some(persistence),
+        }
+    }
+
+    /// Load index from persistence
+    pub async fn load_from_persistence(&self) -> Result<()> {
+        if let Some(ref persistence) = self.persistence {
+            // Load text index
+            if let Some((word_to_cids, cid_to_text)) = persistence.load_text_index().await
+                .map_err(|e| crate::Error::StorageError(e.to_string()))? {
+                let mut text_index = self.text_index.write().await;
+                text_index.word_to_cids = word_to_cids;
+                text_index.cid_to_text = cid_to_text;
+            }
+
+            // Load other indices similarly...
+            // Note: Full implementation would load all index types
+        }
+        Ok(())
+    }
+
+    /// Persist current index state
+    pub async fn persist(&self) -> Result<()> {
+        if let Some(ref persistence) = self.persistence {
+            // Persist text index
+            let text_index = self.text_index.read().await;
+            persistence.save_text_index(&text_index.word_to_cids, &text_index.cid_to_text).await
+                .map_err(|e| crate::Error::StorageError(e.to_string()))?;
+
+            // Persist tag index
+            let tag_index = self.tag_index.read().await;
+            persistence.save_tag_index(&tag_index.tag_to_cids, &tag_index.cid_to_tags).await
+                .map_err(|e| crate::Error::StorageError(e.to_string()))?;
+
+            // Persist type index
+            let type_index = self.type_index.read().await;
+            persistence.save_type_index(&type_index.type_to_cids).await
+                .map_err(|e| crate::Error::StorageError(e.to_string()))?;
+
+            // Persist metadata cache
+            let cache = self.metadata_cache.read().await;
+            persistence.save_metadata_cache(
+                &cache.documents,
+                &cache.images,
+                &cache.audio,
+                &cache.video,
+            ).await
+                .map_err(|e| crate::Error::StorageError(e.to_string()))?;
+
+            // Persist stats
+            let stats = self.stats().await;
+            persistence.save_stats(&stats).await
+                .map_err(|e| crate::Error::StorageError(e.to_string()))?;
+        }
+        Ok(())
     }
 
     /// Index a document
@@ -190,6 +257,11 @@ impl ContentIndex {
             cache.documents.insert(cid, metadata.clone());
         }
 
+        // Persist if enabled
+        if self.persistence.is_some() {
+            self.persist().await?;
+        }
+
         Ok(())
     }
 
@@ -219,6 +291,11 @@ impl ContentIndex {
         {
             let mut cache = self.metadata_cache.write().await;
             cache.images.insert(cid, metadata.clone());
+        }
+
+        // Persist if enabled
+        if self.persistence.is_some() {
+            self.persist().await?;
         }
 
         Ok(())
@@ -487,6 +564,12 @@ impl SearchResultBuilder {
             matching_tags: self.matching_tags,
             metadata: self.metadata,
         })
+    }
+}
+
+impl Default for ContentIndex {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

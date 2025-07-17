@@ -28,6 +28,12 @@ lru = "0.12"
 tracing = "0.1"
 anyhow = "1.0"
 
+# Encryption dependencies
+chacha20poly1305 = "0.10"
+aes-gcm = "0.10"
+rand = "0.8"
+base64 = "0.22"
+
 # Content transformation dependencies
 image = { version = "0.25", default-features = false, features = [
     "jpeg",
@@ -74,3 +80,7 @@ path = "examples/transformation_demo.rs"
 [[example]]
 name = "content_types_demo"
 path = "examples/content_types_demo.rs"
+
+[[example]]
+name = "persistence_demo"
+path = "examples/persistence_demo.rs"

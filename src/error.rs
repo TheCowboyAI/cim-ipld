@@ -33,6 +33,9 @@ pub enum Error {
 
     #[error("Invalid content: {0}")]
     InvalidContent(String),
+    
+    #[error("Storage error: {0}")]
+    StorageError(String),
 }
 
 pub type Result<T> = std::result::Result<T, Error>;

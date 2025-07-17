@@ -4,7 +4,9 @@
 //! including documents, images, audio, and video files. Each type includes
 //! verification to ensure the content matches the expected format.
 
+pub mod encryption;
 pub mod indexing;
+pub mod persistence;
 pub mod service;
 pub mod transformers;
 
