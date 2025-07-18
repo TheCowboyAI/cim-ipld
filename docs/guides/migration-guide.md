@@ -611,3 +611,7 @@ pub async fn resume_migration(checkpoint: MigrationCheckpoint) -> Result<()> {
 ```
 
 This migration guide provides comprehensive strategies for moving from various storage systems to CIM-IPLD while maintaining data integrity and system availability.
+
+
+---
+Copyright 2025 Cowboy AI, LLC.

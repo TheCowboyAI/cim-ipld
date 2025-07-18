@@ -4,6 +4,26 @@ The CIM-IPLD system provides intelligent domain-based content partitioning that 
 
 ## Overview
 
+```mermaid
+graph TD
+    A[Incoming Content] --> B{Domain Detection}
+    B --> C[Content Analysis]
+    C --> D{Domain?}
+    D -->|Media| E[cim-media-*]
+    D -->|Documents| F[cim-docs-*]
+    D -->|Legal| G[cim-legal-*]
+    D -->|Finance| H[cim-finance-*]
+    D -->|Health| I[cim-health-*]
+    
+    style A fill:#e3f2fd
+    style B fill:#fff3e0
+    style E fill:#c8e6c9
+    style F fill:#bbdefb
+    style G fill:#ffcdd2
+    style H fill:#d7ccc8
+    style I fill:#f8bbd0
+```
+
 Domain partitioning enables:
 - **Automatic content classification** based on file type, content patterns, and metadata
 - **Organized storage** with domain-specific buckets (music, documents, contracts, etc.)
@@ -76,6 +96,24 @@ The system supports the following content domains:
 - **Permits**: Building/business permits
 
 ## Detection Methods
+
+```mermaid
+flowchart TD
+    A[Content] --> B{Metadata Hint?}
+    B -->|Yes| C[Use Metadata Domain]
+    B -->|No| D{Pattern Match?}
+    D -->|Yes| E[Use Pattern Domain]
+    D -->|No| F{MIME Type?}
+    F -->|Yes| G[Use MIME Domain]
+    F -->|No| H{Extension?}
+    H -->|Yes| I[Use Extension Domain]
+    H -->|No| J[Default Domain]
+    
+    style B fill:#fff9c4
+    style D fill:#ffecb3
+    style F fill:#ffe0b2
+    style H fill:#ffccbc
+```
 
 Content domain is determined using multiple methods in priority order:
 
@@ -305,3 +343,6 @@ PatternMatcher {
     priority: 75,
 }
 ``` 
+
+---
+Copyright 2025 Cowboy AI, LLC.

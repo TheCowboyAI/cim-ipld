@@ -1,3 +1,5 @@
+// Copyright 2025 Cowboy AI, LLC.
+
 //! Tests for index persistence with encryption
 
 use cim_ipld::{

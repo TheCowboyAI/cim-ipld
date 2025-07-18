@@ -1,3 +1,5 @@
+// Copyright 2025 Cowboy AI, LLC.
+
 //! Object store infrastructure for CIM-IPLD
 
 mod nats_object_store;

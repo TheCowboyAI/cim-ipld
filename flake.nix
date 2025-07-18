@@ -1,3 +1,5 @@
+# Copyright 2025 Cowboy AI, LLC.
+
 {
   description = "CIM-IPLD: Content-addressed storage for the Composable Information Machine";
 

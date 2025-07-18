@@ -1,3 +1,5 @@
+// Copyright 2025 Cowboy AI, LLC.
+
 //! Encryption utilities for content at rest
 //!
 //! This module provides encryption capabilities for stored content,
@@ -399,5 +401,316 @@ mod tests {
         ).unwrap();
         
         assert_eq!(key.len(), 32);
+    }
+
+    #[test]
+    fn test_invalid_key_size() {
+        // Test with wrong key size for AES-256-GCM
+        let wrong_key = vec![0u8; 16]; // Should be 32 bytes
+        let result = ContentEncryption::new(wrong_key, EncryptionAlgorithm::Aes256Gcm);
+        
+        assert!(result.is_err());
+        match result {
+            Err(EncryptionError::InvalidKeySize { expected: 32, actual: 16 }) => {}
+            _ => panic!("Expected InvalidKeySize error"),
+        }
+        
+        // Test with wrong key size for ChaCha20
+        let wrong_key = vec![0u8; 24]; // Should be 32 bytes
+        let result = ContentEncryption::new(wrong_key, EncryptionAlgorithm::ChaCha20Poly1305);
+        
+        assert!(result.is_err());
+        match result {
+            Err(EncryptionError::InvalidKeySize { expected: 32, actual: 24 }) => {}
+            _ => panic!("Expected InvalidKeySize error"),
+        }
+    }
+
+    #[test]
+    fn test_key_mismatch_decryption() {
+        let key1 = ContentEncryption::generate_key(EncryptionAlgorithm::Aes256Gcm);
+        let key2 = ContentEncryption::generate_key(EncryptionAlgorithm::Aes256Gcm);
+        
+        let encryption1 = ContentEncryption::new(key1, EncryptionAlgorithm::Aes256Gcm).unwrap();
+        let encryption2 = ContentEncryption::new(key2, EncryptionAlgorithm::Aes256Gcm).unwrap();
+        
+        let plaintext = b"Secret message";
+        let encrypted = encryption1.encrypt(plaintext, None).unwrap();
+        
+        // Try to decrypt with different key
+        let result = encryption2.decrypt(&encrypted);
+        assert!(result.is_err());
+        match result {
+            Err(EncryptionError::DecryptionFailed(msg)) => {
+                assert!(msg.contains("Key mismatch"));
+            }
+            _ => panic!("Expected DecryptionFailed error"),
+        }
+    }
+
+    #[test]
+    fn test_algorithm_mismatch_decryption() {
+        let key = ContentEncryption::generate_key(EncryptionAlgorithm::Aes256Gcm);
+        
+        let aes_encryption = ContentEncryption::new(key.clone(), EncryptionAlgorithm::Aes256Gcm).unwrap();
+        let chacha_encryption = ContentEncryption::new(key, EncryptionAlgorithm::ChaCha20Poly1305).unwrap();
+        
+        let plaintext = b"Test data";
+        let encrypted = aes_encryption.encrypt(plaintext, None).unwrap();
+        
+        // Try to decrypt with different algorithm
+        let result = chacha_encryption.decrypt(&encrypted);
+        assert!(result.is_err());
+        match result {
+            Err(EncryptionError::DecryptionFailed(msg)) => {
+                assert!(msg.contains("Algorithm mismatch"));
+            }
+            _ => panic!("Expected DecryptionFailed error"),
+        }
+    }
+
+    #[test]
+    fn test_corrupted_ciphertext_decryption() {
+        let key = ContentEncryption::generate_key(EncryptionAlgorithm::Aes256Gcm);
+        let encryption = ContentEncryption::new(key, EncryptionAlgorithm::Aes256Gcm).unwrap();
+        
+        let plaintext = b"Original message";
+        let mut encrypted = encryption.encrypt(plaintext, None).unwrap();
+        
+        // Corrupt the ciphertext
+        encrypted.ciphertext[0] ^= 0xFF;
+        
+        // Decryption should fail
+        let result = encryption.decrypt(&encrypted);
+        assert!(result.is_err());
+        match result {
+            Err(EncryptionError::DecryptionFailed(_)) => {}
+            _ => panic!("Expected DecryptionFailed error"),
+        }
+    }
+
+    #[test]
+    fn test_corrupted_nonce_decryption() {
+        let key = ContentEncryption::generate_key(EncryptionAlgorithm::Aes256Gcm);
+        let encryption = ContentEncryption::new(key, EncryptionAlgorithm::Aes256Gcm).unwrap();
+        
+        let plaintext = b"Test message";
+        let mut encrypted = encryption.encrypt(plaintext, None).unwrap();
+        
+        // Corrupt the nonce
+        encrypted.nonce[0] ^= 0xFF;
+        
+        // Decryption should fail
+        let result = encryption.decrypt(&encrypted);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_aad_mismatch() {
+        let key = ContentEncryption::generate_key(EncryptionAlgorithm::Aes256Gcm);
+        let encryption = ContentEncryption::new(key, EncryptionAlgorithm::Aes256Gcm).unwrap();
+        
+        let plaintext = b"Message with AAD";
+        let aad = Some(b"metadata".as_ref());
+        
+        // Encrypt with AAD
+        let encrypted = encryption.encrypt(plaintext, aad).unwrap();
+        
+        // Try to decrypt with different AAD
+        let mut modified = encrypted.clone();
+        modified.aad = Some(b"wrong metadata".to_vec());
+        
+        let result = encryption.decrypt(&modified);
+        assert!(result.is_err());
+        
+        // Try to decrypt with no AAD when AAD was used
+        modified.aad = None;
+        let result = encryption.decrypt(&modified);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_xchacha20_encryption() {
+        let key = ContentEncryption::generate_key(EncryptionAlgorithm::XChaCha20Poly1305);
+        let encryption = ContentEncryption::new(key, EncryptionAlgorithm::XChaCha20Poly1305).unwrap();
+        
+        let plaintext = b"XChaCha20 test data";
+        let aad = Some(b"additional data".as_ref());
+        
+        let encrypted = encryption.encrypt(plaintext, aad).unwrap();
+        assert_eq!(encrypted.nonce.len(), 24); // XChaCha20 uses 24-byte nonce
+        
+        let decrypted = encryption.decrypt(&encrypted).unwrap();
+        assert_eq!(plaintext, &decrypted[..]);
+    }
+
+    #[test]
+    fn test_all_aad_combinations() {
+        for algorithm in [
+            EncryptionAlgorithm::Aes256Gcm,
+            EncryptionAlgorithm::ChaCha20Poly1305,
+            EncryptionAlgorithm::XChaCha20Poly1305,
+        ] {
+            let key = ContentEncryption::generate_key(algorithm);
+            let encryption = ContentEncryption::new(key, algorithm).unwrap();
+            
+            let plaintext = b"Test with various AAD";
+            
+            // Test with AAD
+            let encrypted_with_aad = encryption.encrypt(plaintext, Some(b"aad data")).unwrap();
+            assert_eq!(encrypted_with_aad.aad, Some(b"aad data".to_vec()));
+            
+            // Test without AAD
+            let encrypted_no_aad = encryption.encrypt(plaintext, None).unwrap();
+            assert_eq!(encrypted_no_aad.aad, None);
+            
+            // Verify both decrypt correctly
+            let decrypted1 = encryption.decrypt(&encrypted_with_aad).unwrap();
+            let decrypted2 = encryption.decrypt(&encrypted_no_aad).unwrap();
+            
+            assert_eq!(plaintext, &decrypted1[..]);
+            assert_eq!(plaintext, &decrypted2[..]);
+        }
+    }
+
+    #[test]
+    fn test_key_rotation_with_different_algorithms() {
+        // Test that key rotation fails when algorithms differ
+        let old_key = ContentEncryption::generate_key(EncryptionAlgorithm::Aes256Gcm);
+        let new_key = ContentEncryption::generate_key(EncryptionAlgorithm::ChaCha20Poly1305);
+        
+        let old_encryption = ContentEncryption::new(old_key, EncryptionAlgorithm::Aes256Gcm).unwrap();
+        let new_encryption = ContentEncryption::new(new_key, EncryptionAlgorithm::ChaCha20Poly1305).unwrap();
+        
+        let rotation = KeyRotation {
+            old_encryption,
+            new_encryption,
+        };
+        
+        let plaintext = b"Data to rotate";
+        let encrypted = rotation.old_encryption.encrypt(plaintext, None).unwrap();
+        
+        // Rotation should work but produce different algorithm
+        let rotated = rotation.rotate(&encrypted).unwrap();
+        assert_eq!(rotated.algorithm, EncryptionAlgorithm::ChaCha20Poly1305);
+        
+        // Verify new encryption can decrypt
+        let decrypted = rotation.new_encryption.decrypt(&rotated).unwrap();
+        assert_eq!(plaintext, &decrypted[..]);
+    }
+
+    #[test]
+    fn test_nonce_size_validation() {
+        let key = ContentEncryption::generate_key(EncryptionAlgorithm::Aes256Gcm);
+        let encryption = ContentEncryption::new(key, EncryptionAlgorithm::Aes256Gcm).unwrap();
+        
+        let plaintext = b"Test";
+        let encrypted = encryption.encrypt(plaintext, None).unwrap();
+        
+        // Verify correct nonce sizes for each algorithm
+        assert_eq!(EncryptionAlgorithm::Aes256Gcm.nonce_size(), 12);
+        assert_eq!(EncryptionAlgorithm::ChaCha20Poly1305.nonce_size(), 12);
+        assert_eq!(EncryptionAlgorithm::XChaCha20Poly1305.nonce_size(), 24);
+        
+        assert_eq!(encrypted.nonce.len(), 12);
+    }
+
+    #[test]
+    fn test_key_hash_validation() {
+        let key1 = vec![1u8; 32];
+        let key2 = vec![2u8; 32];
+        
+        let enc1 = ContentEncryption::new(key1, EncryptionAlgorithm::Aes256Gcm).unwrap();
+        let enc2 = ContentEncryption::new(key2, EncryptionAlgorithm::Aes256Gcm).unwrap();
+        
+        // Different keys should have different hashes
+        assert_ne!(enc1.key_hash, enc2.key_hash);
+        
+        // Same key should have same hash
+        let key3 = vec![1u8; 32];
+        let enc3 = ContentEncryption::new(key3, EncryptionAlgorithm::Aes256Gcm).unwrap();
+        assert_eq!(enc1.key_hash, enc3.key_hash);
+    }
+
+    #[test]
+    fn test_empty_plaintext() {
+        let key = ContentEncryption::generate_key(EncryptionAlgorithm::Aes256Gcm);
+        let encryption = ContentEncryption::new(key, EncryptionAlgorithm::Aes256Gcm).unwrap();
+        
+        let plaintext = b"";
+        let encrypted = encryption.encrypt(plaintext, None).unwrap();
+        let decrypted = encryption.decrypt(&encrypted).unwrap();
+        
+        assert_eq!(plaintext, &decrypted[..]);
+    }
+
+    #[test]
+    fn test_large_plaintext() {
+        let key = ContentEncryption::generate_key(EncryptionAlgorithm::Aes256Gcm);
+        let encryption = ContentEncryption::new(key, EncryptionAlgorithm::Aes256Gcm).unwrap();
+        
+        // Test with 1MB of data
+        let plaintext = vec![42u8; 1024 * 1024];
+        let encrypted = encryption.encrypt(&plaintext, None).unwrap();
+        let decrypted = encryption.decrypt(&encrypted).unwrap();
+        
+        assert_eq!(plaintext, decrypted);
+    }
+
+    #[test]
+    fn test_key_derivation_consistency() {
+        let password = "test password";
+        let salt = b"consistent salt";
+        
+        // Same password and salt should produce same key
+        let key1 = ContentEncryption::derive_key_from_password(
+            password,
+            salt,
+            EncryptionAlgorithm::Aes256Gcm
+        ).unwrap();
+        
+        let key2 = ContentEncryption::derive_key_from_password(
+            password,
+            salt,
+            EncryptionAlgorithm::Aes256Gcm
+        ).unwrap();
+        
+        assert_eq!(key1, key2);
+        
+        // Different salt should produce different key
+        let key3 = ContentEncryption::derive_key_from_password(
+            password,
+            b"different salt",
+            EncryptionAlgorithm::Aes256Gcm
+        ).unwrap();
+        
+        assert_ne!(key1, key3);
+        
+        // Different password should produce different key
+        let key4 = ContentEncryption::derive_key_from_password(
+            "different password",
+            salt,
+            EncryptionAlgorithm::Aes256Gcm
+        ).unwrap();
+        
+        assert_ne!(key1, key4);
+    }
+
+    #[test]
+    fn test_encryption_error_display() {
+        let err1 = EncryptionError::EncryptionFailed("test error".to_string());
+        assert_eq!(err1.to_string(), "Encryption failed: test error");
+        
+        let err2 = EncryptionError::DecryptionFailed("decrypt error".to_string());
+        assert_eq!(err2.to_string(), "Decryption failed: decrypt error");
+        
+        let err3 = EncryptionError::InvalidKeySize { expected: 32, actual: 16 };
+        assert_eq!(err3.to_string(), "Invalid key size: expected 32, got 16");
+        
+        let err4 = EncryptionError::InvalidNonce;
+        assert_eq!(err4.to_string(), "Invalid nonce size");
+        
+        let err5 = EncryptionError::KeyDerivationFailed;
+        assert_eq!(err5.to_string(), "Key derivation failed");
     }
 }

@@ -1,3 +1,5 @@
+// Copyright 2025 Cowboy AI, LLC.
+
 //! IPLD Codecs Demonstration
 //!
 //! This example demonstrates the various IPLD codecs available in CIM-IPLD,

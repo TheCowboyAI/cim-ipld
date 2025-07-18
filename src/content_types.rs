@@ -1,3 +1,5 @@
+// Copyright 2025 Cowboy AI, LLC.
+
 //! Content types for common file formats with verification
 //!
 //! This module provides typed content wrappers for common file formats
@@ -924,5 +926,611 @@ mod tests {
         assert_eq!(content_type_name(ContentType::Custom(codec::MKV)), "MKV Video");
         assert_eq!(content_type_name(ContentType::Custom(codec::AVI)), "AVI Video");
         assert_eq!(content_type_name(ContentType::Custom(0x999999)), "Unknown");
+    }
+
+    #[test]
+    fn test_webp_edge_cases() {
+        // Test WEBP with exact 12 bytes (minimum required)
+        let short_webp = b"RIFF\x00\x00\x00\x00WEBP";
+        assert!(!WebPImage::verify(short_webp)); // Should fail - needs > 12 bytes
+        
+        // Test WEBP with 13 bytes (just enough)
+        let min_webp = b"RIFF\x00\x00\x00\x00WEBP\x00";
+        assert!(WebPImage::verify(min_webp));
+        
+        // Test WEBP with wrong RIFF header
+        let wrong_riff = b"RIFX\x00\x00\x00\x00WEBP\x00";
+        assert!(!WebPImage::verify(wrong_riff));
+        
+        // Test empty data
+        let empty = b"";
+        assert!(!WebPImage::verify(empty));
+    }
+
+    #[test]
+    fn test_wav_edge_cases() {
+        // Test WAV with exact 12 bytes (minimum required)
+        let short_wav = b"RIFF\x00\x00\x00\x00WAVE";
+        assert!(!WavAudio::verify(short_wav)); // Should fail - needs > 12 bytes
+        
+        // Test WAV with 13 bytes (just enough)
+        let min_wav = b"RIFF\x00\x00\x00\x00WAVE\x00";
+        assert!(WavAudio::verify(min_wav));
+        
+        // Test WAV with wrong format chunk
+        let wrong_wave = b"RIFF\x00\x00\x00\x00WAXE\x00";
+        assert!(!WavAudio::verify(wrong_wave));
+    }
+
+    #[test]
+    fn test_avi_edge_cases() {
+        // Test AVI with exact 12 bytes (minimum required)
+        let short_avi = b"RIFF\x00\x00\x00\x00AVI ";
+        assert!(!AviVideo::verify(short_avi)); // Should fail - needs > 12 bytes
+        
+        // Test AVI with 13 bytes (just enough)
+        let min_avi = b"RIFF\x00\x00\x00\x00AVI \x00";
+        assert!(AviVideo::verify(min_avi));
+        
+        // Test AVI with wrong AVI chunk
+        let wrong_avi = b"RIFF\x00\x00\x00\x00AVIX\x00";
+        assert!(!AviVideo::verify(wrong_avi));
+    }
+
+    #[test]
+    fn test_mov_edge_cases() {
+        // Test MOV with less than 12 bytes
+        let short_mov = b"\x00\x00\x00\x08ftypqt";
+        assert!(!MovVideo::verify(short_mov));
+        
+        // Test MOV with exactly 12 bytes
+        let exact_mov = b"\x00\x00\x00\x0Cftypqt  ";
+        assert!(MovVideo::verify(exact_mov));
+        
+        // Test MOV with wrong brand
+        let wrong_brand = b"\x00\x00\x00\x0Cftypmp42";
+        assert!(!MovVideo::verify(wrong_brand)); // This is MP4, not MOV
+    }
+
+    #[test]
+    fn test_mp4_edge_cases() {
+        // Test MP4 with less than 8 bytes
+        let short_mp4 = b"\x00\x00\x00\x04fty";
+        assert!(!Mp4Video::verify(short_mp4));
+        
+        // Test MP4 with exactly 8 bytes
+        let exact_mp4 = b"\x00\x00\x00\x08ftyp";
+        assert!(Mp4Video::verify(exact_mp4));
+        
+        // Test MP4 with wrong box type
+        let wrong_box = b"\x00\x00\x00\x08mdat";
+        assert!(!Mp4Video::verify(wrong_box));
+    }
+
+    #[test]
+    fn test_detect_content_type_edge_cases() {
+        // Test empty data
+        assert_eq!(detect_content_type(b""), None);
+        
+        // Test single byte
+        assert_eq!(detect_content_type(b"X"), None);
+        
+        // Test data that's too short for format detection
+        assert_eq!(detect_content_type(b"RI"), None);
+        assert_eq!(detect_content_type(b"RIFF"), None); // Too short for WEBP/WAV/AVI
+        
+        // Test MP4/MOV differentiation with minimal data
+        let mp4_min = b"\x00\x00\x00\x08ftypmp42\x00"; // Need > 12 bytes
+        assert_eq!(detect_content_type(mp4_min), Some(ContentType::Custom(codec::MP4)));
+        
+        let mov_min = b"\x00\x00\x00\x0Cftypqt  \x00"; // Need > 12 bytes
+        assert_eq!(detect_content_type(mov_min), Some(ContentType::Custom(codec::MOV)));
+        
+        // Test data with MP4/MOV signature but too short
+        let short_ftyp = b"\x00\x00\x00\x08ftyp";
+        assert_eq!(detect_content_type(short_ftyp), None); // Too short, needs > 12 bytes
+    }
+
+    #[test]
+    fn test_content_new_error_handling() {
+        // Test invalid PDF
+        let result = PdfDocument::new(b"Not PDF".to_vec(), DocumentMetadata::default());
+        assert!(result.is_err());
+        match result {
+            Err(Error::InvalidContent(msg)) => assert!(msg.contains("Not a valid PDF")),
+            _ => panic!("Expected InvalidContent error"),
+        }
+        
+        // Test invalid JPEG
+        let result = JpegImage::new(b"Not JPEG".to_vec(), ImageMetadata::default());
+        assert!(result.is_err());
+        match result {
+            Err(Error::InvalidContent(msg)) => assert!(msg.contains("Not a valid JPEG")),
+            _ => panic!("Expected InvalidContent error"),
+        }
+        
+        // Test invalid MP3
+        let result = Mp3Audio::new(b"Not MP3".to_vec(), AudioMetadata::default());
+        assert!(result.is_err());
+        match result {
+            Err(Error::InvalidContent(msg)) => assert!(msg.contains("Not a valid MP3")),
+            _ => panic!("Expected InvalidContent error"),
+        }
+        
+        // Test invalid MP4
+        let result = Mp4Video::new(b"Not MP4".to_vec(), VideoMetadata::default());
+        assert!(result.is_err());
+        match result {
+            Err(Error::InvalidContent(msg)) => assert!(msg.contains("Not a valid MP4")),
+            _ => panic!("Expected InvalidContent error"),
+        }
+    }
+
+    #[test]
+    fn test_jpeg_edge_cases() {
+        // Test JPEG with FFD8 but wrong next bytes
+        let bad_jpeg = b"\xFF\xD8\x00\x00";
+        assert!(!JpegImage::verify(bad_jpeg));
+        
+        // Test very short JPEG header
+        let short_jpeg = b"\xFF\xD8";
+        assert!(!JpegImage::verify(short_jpeg));
+        
+        // Test JPEG with JFIF marker
+        let jfif = b"\xFF\xD8\xFF\xE0";
+        assert!(JpegImage::verify(jfif));
+        
+        // Test JPEG with EXIF marker
+        let exif = b"\xFF\xD8\xFF\xE1";
+        assert!(JpegImage::verify(exif));
+        
+        // Test JPEG with other valid markers
+        let other = b"\xFF\xD8\xFF\xDB"; // DQT marker
+        assert!(JpegImage::verify(other));
+    }
+
+    #[test]
+    fn test_mp3_edge_cases() {
+        // Test MP3 with incomplete ID3 header
+        let short_id3 = b"ID";
+        assert!(!Mp3Audio::verify(short_id3));
+        
+        // Test MP3 with incomplete sync header
+        let short_sync = b"\xFF";
+        assert!(!Mp3Audio::verify(short_sync));
+        
+        // Test MP3 with sync pattern - only 0xFF 0xFB is checked
+        let sync1 = b"\xFF\xFA"; // Not 0xFF 0xFB
+        assert!(!Mp3Audio::verify(sync1));
+        
+        let sync2 = b"\xFF\xF3"; // Not 0xFF 0xFB
+        assert!(!Mp3Audio::verify(sync2));
+        
+        let valid_sync = b"\xFF\xFB"; // Valid MP3 sync
+        assert!(Mp3Audio::verify(valid_sync));
+        
+        // Test MP3 with invalid sync (FF but wrong second byte)
+        let bad_sync = b"\xFF\x00";
+        assert!(!Mp3Audio::verify(bad_sync));
+    }
+
+    #[test]
+    fn test_aac_edge_cases() {
+        // Test AAC with incomplete ADTS header
+        let short_aac = b"\xFF";
+        assert!(!AacAudio::verify(short_aac));
+        
+        // Test AAC with valid ADTS sync
+        let valid_aac1 = b"\xFF\xF1"; // No CRC
+        assert!(AacAudio::verify(valid_aac1));
+        
+        // AAC only checks for 0xFF 0xF1 pattern
+        let valid_aac2 = b"\xFF\xF9"; // This is not 0xFF 0xF1
+        assert!(!AacAudio::verify(valid_aac2));
+        
+        // Test AAC with invalid sync pattern
+        let bad_aac = b"\xFF\xF0";
+        assert!(!AacAudio::verify(bad_aac));
+    }
+
+    #[test]
+    fn test_ogg_edge_cases() {
+        // Test OGG with incomplete header
+        let short_ogg = b"Og";
+        assert!(!OggAudio::verify(short_ogg));
+        
+        let incomplete_ogg = b"Ogg";
+        assert!(!OggAudio::verify(incomplete_ogg));
+        
+        // Test OGG with wrong magic
+        let bad_ogg = b"OgXS";
+        assert!(!OggAudio::verify(bad_ogg));
+    }
+
+    #[test]
+    fn test_gif_edge_cases() {
+        // Test GIF with incomplete header
+        let short_gif = b"GIF";
+        assert!(!GifImage::verify(short_gif));
+        
+        // GIF8 is a valid prefix for both GIF87a and GIF89a
+        let incomplete_gif = b"GIF8";
+        assert!(GifImage::verify(incomplete_gif));
+        
+        // Test GIF with wrong version
+        let bad_gif = b"GIF90a";
+        assert!(!GifImage::verify(bad_gif));
+    }
+
+    #[test]
+    fn test_flac_edge_cases() {
+        // Test FLAC with incomplete header
+        let short_flac = b"fL";
+        assert!(!FlacAudio::verify(short_flac));
+        
+        let incomplete_flac = b"fLa";
+        assert!(!FlacAudio::verify(incomplete_flac));
+        
+        // Test FLAC with wrong magic
+        let bad_flac = b"fLaX";
+        assert!(!FlacAudio::verify(bad_flac));
+    }
+
+    #[test]
+    fn test_mkv_edge_cases() {
+        // Test MKV with incomplete EBML header
+        let short_mkv = b"\x1A";
+        assert!(!MkvVideo::verify(short_mkv));
+        
+        let incomplete_mkv = b"\x1A\x45";
+        assert!(!MkvVideo::verify(incomplete_mkv));
+        
+        // Test MKV with wrong EBML magic
+        let bad_mkv = b"\x1A\x45\xDF\xA4";
+        assert!(!MkvVideo::verify(bad_mkv));
+    }
+
+    #[test]
+    fn test_png_edge_cases() {
+        // Test PNG with incomplete header
+        let short_png = b"\x89PN";
+        assert!(!PngImage::verify(short_png));
+        
+        // Test PNG with wrong magic bytes
+        let bad_png = b"\x89PNG\r\n\x1b\n"; // Wrong byte at position 6
+        assert!(!PngImage::verify(bad_png));
+    }
+
+    #[test]
+    fn test_docx_edge_cases() {
+        // Test DOCX with incomplete PK header
+        let short_docx = b"PK";
+        assert!(!DocxDocument::verify(short_docx));
+        
+        // Test DOCX with wrong PK signature
+        let bad_docx = b"PK\x05\x06"; // This is End of Central Directory
+        assert!(!DocxDocument::verify(bad_docx));
+    }
+
+    #[test]
+    fn test_pdf_edge_cases() {
+        // Test PDF with incomplete header
+        let short_pdf = b"%PD";
+        assert!(!PdfDocument::verify(short_pdf));
+        
+        // Test PDF with wrong header
+        let bad_pdf = b"%PDX-";
+        assert!(!PdfDocument::verify(bad_pdf));
+    }
+
+    #[test]
+    fn test_boundary_conditions() {
+        // Test formats that check specific byte positions
+        
+        // WEBP at exactly boundary
+        let webp_boundary = b"RIFF\x00\x00\x00\x00WEBP"; // Exactly 12 bytes
+        assert_eq!(detect_content_type(webp_boundary), None); // Should fail in detect_content_type
+        
+        // WAV at exactly boundary  
+        let wav_boundary = b"RIFF\x00\x00\x00\x00WAVE"; // Exactly 12 bytes
+        assert_eq!(detect_content_type(wav_boundary), None); // Should fail in detect_content_type
+        
+        // AVI at exactly boundary
+        let avi_boundary = b"RIFF\x00\x00\x00\x00AVI "; // Exactly 12 bytes
+        assert_eq!(detect_content_type(avi_boundary), None); // Should fail in detect_content_type
+        
+        // MOV at exactly boundary
+        let mov_boundary = b"\x00\x00\x00\x08ftypqt"; // Less than 12 bytes
+        assert_eq!(detect_content_type(mov_boundary), None); // Should fail
+    }
+
+    #[test]
+    fn test_all_verify_methods_with_empty_data() {
+        // Ensure all verify methods handle empty data gracefully
+        assert!(!PdfDocument::verify(b""));
+        assert!(!DocxDocument::verify(b""));
+        assert!(!JpegImage::verify(b""));
+        assert!(!PngImage::verify(b""));
+        assert!(!GifImage::verify(b""));
+        assert!(!WebPImage::verify(b""));
+        assert!(!Mp3Audio::verify(b""));
+        assert!(!WavAudio::verify(b""));
+        assert!(!FlacAudio::verify(b""));
+        assert!(!AacAudio::verify(b""));
+        assert!(!OggAudio::verify(b""));
+        assert!(!Mp4Video::verify(b""));
+        assert!(!MovVideo::verify(b""));
+        assert!(!MkvVideo::verify(b""));
+        assert!(!AviVideo::verify(b""));
+    }
+
+    #[test]
+    fn test_content_type_core_names() {
+        // Test core content type names - these return "Unknown" since they're not in the match
+        assert_eq!(content_type_name(ContentType::Event), "Unknown");
+        assert_eq!(content_type_name(ContentType::Graph), "Unknown");
+        assert_eq!(content_type_name(ContentType::Node), "Unknown");
+        assert_eq!(content_type_name(ContentType::Edge), "Unknown");
+        assert_eq!(content_type_name(ContentType::Command), "Unknown");
+        assert_eq!(content_type_name(ContentType::Query), "Unknown");
+        assert_eq!(content_type_name(ContentType::Markdown), "Unknown");
+        assert_eq!(content_type_name(ContentType::Json), "Unknown");
+        assert_eq!(content_type_name(ContentType::Yaml), "Unknown");
+        assert_eq!(content_type_name(ContentType::Toml), "Unknown");
+        assert_eq!(content_type_name(ContentType::Image), "Unknown");
+        assert_eq!(content_type_name(ContentType::Video), "Unknown");
+        assert_eq!(content_type_name(ContentType::Audio), "Unknown");
+    }
+
+    #[test]
+    fn test_markdown_from_bytes_error() {
+        // Test invalid UTF-8 in markdown
+        let invalid_utf8 = vec![0xFF, 0xFE, 0xFD]; // Invalid UTF-8 sequence
+        let result = MarkdownDocument::from_bytes(invalid_utf8, DocumentMetadata::default());
+        assert!(result.is_err());
+        match result {
+            Err(Error::InvalidContent(msg)) => assert!(msg.contains("Invalid UTF-8 in markdown")),
+            _ => panic!("Expected InvalidContent error"),
+        }
+    }
+
+    #[test]
+    fn test_text_from_bytes_error() {
+        // Test invalid UTF-8 in text
+        let invalid_utf8 = vec![0xC0, 0x80]; // Overlong encoding (invalid UTF-8)
+        let result = TextDocument::from_bytes(invalid_utf8, DocumentMetadata::default());
+        assert!(result.is_err());
+        match result {
+            Err(Error::InvalidContent(msg)) => assert!(msg.contains("Invalid UTF-8 in text")),
+            _ => panic!("Expected InvalidContent error"),
+        }
+    }
+
+    #[test]
+    fn test_valid_utf8_conversion() {
+        // Test valid UTF-8 conversion for markdown
+        let valid_utf8 = "Hello 世界! 🌍".as_bytes().to_vec();
+        let result = MarkdownDocument::from_bytes(valid_utf8.clone(), DocumentMetadata::default());
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().content, "Hello 世界! 🌍");
+        
+        // Test valid UTF-8 conversion for text
+        let result = TextDocument::from_bytes(valid_utf8, DocumentMetadata::default());
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().content, "Hello 世界! 🌍");
+    }
+
+    #[test]
+    fn test_metadata_fields() {
+        // Test DocumentMetadata with all fields
+        let metadata = DocumentMetadata {
+            title: Some("Test Document".to_string()),
+            author: Some("Test Author".to_string()),
+            created_at: Some(1234567890),
+            modified_at: Some(1234567900),
+            tags: vec!["tag1".to_string(), "tag2".to_string()],
+            language: Some("en".to_string()),
+        };
+        
+        assert_eq!(metadata.title.unwrap(), "Test Document");
+        assert_eq!(metadata.author.unwrap(), "Test Author");
+        assert_eq!(metadata.created_at.unwrap(), 1234567890);
+        assert_eq!(metadata.modified_at.unwrap(), 1234567900);
+        assert_eq!(metadata.tags.len(), 2);
+        assert_eq!(metadata.language.unwrap(), "en");
+        
+        // Test ImageMetadata with all fields
+        let img_metadata = ImageMetadata {
+            width: Some(1920),
+            height: Some(1080),
+            format: Some("JPEG".to_string()),
+            color_space: Some("sRGB".to_string()),
+            compression: Some("lossy".to_string()),
+            tags: vec!["photo".to_string()],
+        };
+        
+        assert_eq!(img_metadata.width.unwrap(), 1920);
+        assert_eq!(img_metadata.height.unwrap(), 1080);
+        
+        // Test AudioMetadata with all fields
+        let audio_metadata = AudioMetadata {
+            duration_ms: Some(180000),
+            bitrate: Some(320000),
+            sample_rate: Some(44100),
+            channels: Some(2),
+            codec: Some("MP3".to_string()),
+            artist: Some("Test Artist".to_string()),
+            album: Some("Test Album".to_string()),
+            title: Some("Test Song".to_string()),
+            year: Some(2024),
+            tags: vec!["music".to_string()],
+        };
+        
+        assert_eq!(audio_metadata.duration_ms.unwrap(), 180000);
+        assert_eq!(audio_metadata.channels.unwrap(), 2);
+        
+        // Test VideoMetadata with all fields
+        let video_metadata = VideoMetadata {
+            duration_ms: Some(120000),
+            width: Some(1920),
+            height: Some(1080),
+            frame_rate: Some(30.0),
+            video_codec: Some("H.264".to_string()),
+            audio_codec: Some("AAC".to_string()),
+            bitrate: Some(5000000),
+            tags: vec!["movie".to_string()],
+        };
+        
+        assert_eq!(video_metadata.frame_rate.unwrap(), 30.0);
+    }
+
+    #[test]
+    fn test_all_constructors_with_valid_data() {
+        // Test all valid constructors
+        let valid_pdf = b"%PDF-1.4\ntest".to_vec();
+        let pdf = PdfDocument::new(valid_pdf, DocumentMetadata::default());
+        assert!(pdf.is_ok());
+        
+        let valid_docx = b"PK\x03\x04\x14\x00".to_vec();
+        let docx = DocxDocument::new(valid_docx, DocumentMetadata::default());
+        assert!(docx.is_ok());
+        
+        let markdown = MarkdownDocument::new("# Test".to_string(), DocumentMetadata::default());
+        assert!(markdown.is_ok());
+        
+        let text = TextDocument::new("Test".to_string(), DocumentMetadata::default());
+        assert!(text.is_ok());
+        
+        let valid_jpeg = b"\xFF\xD8\xFF\xE0test".to_vec();
+        let jpeg = JpegImage::new(valid_jpeg, ImageMetadata::default());
+        assert!(jpeg.is_ok());
+        
+        let valid_png = b"\x89PNG\r\n\x1a\ntest".to_vec();
+        let png = PngImage::new(valid_png, ImageMetadata::default());
+        assert!(png.is_ok());
+        
+        let valid_gif = b"GIF89atest".to_vec();
+        let gif = GifImage::new(valid_gif, ImageMetadata::default());
+        assert!(gif.is_ok());
+        
+        let valid_webp = b"RIFF\x00\x00\x00\x00WEBPtest".to_vec();
+        let webp = WebPImage::new(valid_webp, ImageMetadata::default());
+        assert!(webp.is_ok());
+        
+        let valid_mp3 = b"ID3\x03\x00test".to_vec();
+        let mp3 = Mp3Audio::new(valid_mp3, AudioMetadata::default());
+        assert!(mp3.is_ok());
+        
+        let valid_wav = b"RIFF\x00\x00\x00\x00WAVEtest".to_vec();
+        let wav = WavAudio::new(valid_wav, AudioMetadata::default());
+        assert!(wav.is_ok());
+        
+        let valid_flac = b"fLaCtest".to_vec();
+        let flac = FlacAudio::new(valid_flac, AudioMetadata::default());
+        assert!(flac.is_ok());
+        
+        let valid_aac = b"\xFF\xF1test".to_vec();
+        let aac = AacAudio::new(valid_aac, AudioMetadata::default());
+        assert!(aac.is_ok());
+        
+        let valid_ogg = b"OggStest".to_vec();
+        let ogg = OggAudio::new(valid_ogg, AudioMetadata::default());
+        assert!(ogg.is_ok());
+        
+        let valid_mp4 = b"\x00\x00\x00\x08ftyptest".to_vec();
+        let mp4 = Mp4Video::new(valid_mp4, VideoMetadata::default());
+        assert!(mp4.is_ok());
+        
+        let valid_mov = b"\x00\x00\x00\x0Cftypqt  test".to_vec();
+        let mov = MovVideo::new(valid_mov, VideoMetadata::default());
+        assert!(mov.is_ok());
+        
+        let valid_mkv = b"\x1A\x45\xDF\xA3test".to_vec();
+        let mkv = MkvVideo::new(valid_mkv, VideoMetadata::default());
+        assert!(mkv.is_ok());
+        
+        let valid_avi = b"RIFF\x00\x00\x00\x00AVI test".to_vec();
+        let avi = AviVideo::new(valid_avi, VideoMetadata::default());
+        assert!(avi.is_ok());
+    }
+
+    #[test]
+    fn test_detect_content_type_partial_matches() {
+        // Test partial matches that shouldn't be detected
+        let partial_pdf = b"%PD"; // Missing "F-"
+        assert_eq!(detect_content_type(partial_pdf), None);
+        
+        let partial_jpeg = b"\xFF\xD8"; // Missing third byte
+        assert_eq!(detect_content_type(partial_jpeg), None);
+        
+        let partial_png = b"\x89PN"; // Missing rest of signature
+        assert_eq!(detect_content_type(partial_png), None);
+        
+        let partial_mp3 = b"ID"; // Incomplete ID3
+        assert_eq!(detect_content_type(partial_mp3), None);
+        
+        let partial_flac = b"fL"; // Incomplete fLaC
+        assert_eq!(detect_content_type(partial_flac), None);
+    }
+
+    #[test]
+    fn test_enum_variants() {
+        // Test ImageContent enum
+        let jpeg_img = JpegImage {
+            data: vec![1, 2, 3],
+            metadata: ImageMetadata::default(),
+        };
+        let img_content = ImageContent::Jpeg(jpeg_img.clone());
+        match img_content {
+            ImageContent::Jpeg(j) => assert_eq!(j.data, jpeg_img.data),
+            _ => panic!("Wrong variant"),
+        }
+        
+        // Test AudioContent enum
+        let mp3_audio = Mp3Audio {
+            data: vec![4, 5, 6],
+            metadata: AudioMetadata::default(),
+        };
+        let audio_content = AudioContent::Mp3(mp3_audio.clone());
+        match audio_content {
+            AudioContent::Mp3(m) => assert_eq!(m.data, mp3_audio.data),
+            _ => panic!("Wrong variant"),
+        }
+        
+        // Test VideoContent enum
+        let mp4_video = Mp4Video {
+            data: vec![7, 8, 9],
+            metadata: VideoMetadata::default(),
+        };
+        let video_content = VideoContent::Mp4(mp4_video.clone());
+        match video_content {
+            VideoContent::Mp4(m) => assert_eq!(m.data, mp4_video.data),
+            _ => panic!("Wrong variant"),
+        }
+    }
+
+    #[test]
+    fn test_codec_constants() {
+        // Verify all codec constants are in the correct range
+        assert!(codec::PDF >= 0x600000 && codec::PDF <= 0x60FFFF);
+        assert!(codec::DOCX >= 0x600000 && codec::DOCX <= 0x60FFFF);
+        assert!(codec::MARKDOWN >= 0x600000 && codec::MARKDOWN <= 0x60FFFF);
+        assert!(codec::TEXT >= 0x600000 && codec::TEXT <= 0x60FFFF);
+        
+        assert!(codec::JPEG >= 0x610000 && codec::JPEG <= 0x61FFFF);
+        assert!(codec::PNG >= 0x610000 && codec::PNG <= 0x61FFFF);
+        assert!(codec::GIF >= 0x610000 && codec::GIF <= 0x61FFFF);
+        assert!(codec::WEBP >= 0x610000 && codec::WEBP <= 0x61FFFF);
+        
+        assert!(codec::MP3 >= 0x620000 && codec::MP3 <= 0x62FFFF);
+        assert!(codec::WAV >= 0x620000 && codec::WAV <= 0x62FFFF);
+        assert!(codec::FLAC >= 0x620000 && codec::FLAC <= 0x62FFFF);
+        assert!(codec::AAC >= 0x620000 && codec::AAC <= 0x62FFFF);
+        assert!(codec::OGG >= 0x620000 && codec::OGG <= 0x62FFFF);
+        
+        assert!(codec::MP4 >= 0x630000 && codec::MP4 <= 0x63FFFF);
+        assert!(codec::MOV >= 0x630000 && codec::MOV <= 0x63FFFF);
+        assert!(codec::MKV >= 0x630000 && codec::MKV <= 0x63FFFF);
+        assert!(codec::AVI >= 0x630000 && codec::AVI <= 0x63FFFF);
     }
 } 

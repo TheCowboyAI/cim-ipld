@@ -1,3 +1,5 @@
+// Copyright 2025 Cowboy AI, LLC.
+
 //! Content Transformation Demonstration
 //!
 //! This example showcases content transformation capabilities in CIM-IPLD

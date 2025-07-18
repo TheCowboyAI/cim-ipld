@@ -1,3 +1,5 @@
+// Copyright 2025 Cowboy AI, LLC.
+
 //! Stress tests for CIM-IPLD
 //!
 //! These tests push the system to its limits to ensure it performs

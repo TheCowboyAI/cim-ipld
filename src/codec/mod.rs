@@ -1,3 +1,5 @@
+// Copyright 2025 Cowboy AI, LLC.
+
 //! Codec registry and implementations for CIM-IPLD
 //!
 //! This module provides codec support for encoding and decoding content

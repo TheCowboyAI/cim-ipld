@@ -1,0 +1,31 @@
+# Copyright 2025 Cowboy AI, LLC.
+
+# Auto detect text files and perform LF normalization
+* text=auto
+
+# Rust files
+*.rs text eol=lf
+*.toml text eol=lf
+
+# Documentation
+*.md text eol=lf
+LICENSE* text eol=lf
+
+# Scripts
+*.sh text eol=lf
+*.bash text eol=lf
+
+# Configuration
+.gitignore text eol=lf
+.gitattributes text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.json text eol=lf
+
+# Binary files
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary

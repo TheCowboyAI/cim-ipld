@@ -1,3 +1,5 @@
+// Copyright 2025 Cowboy AI, LLC.
+
 //! Core types for CIM-IPLD
 
 use serde::{Deserialize, Serialize};

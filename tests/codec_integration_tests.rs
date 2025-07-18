@@ -1,3 +1,5 @@
+// Copyright 2025 Cowboy AI, LLC.
+
 //! Codec Integration Tests
 //!
 //! Tests for IPLD codec functionality and interoperability

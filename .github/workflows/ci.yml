@@ -1,0 +1,117 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+
+jobs:
+  test:
+    name: Test
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        rust: [stable, beta]
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@master
+      with:
+        toolchain: ${{ matrix.rust }}
+        components: rustfmt, clippy
+    
+    - name: Cache cargo registry
+      uses: actions/cache@v3
+      with:
+        path: ~/.cargo/registry
+        key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+    
+    - name: Cache cargo index
+      uses: actions/cache@v3
+      with:
+        path: ~/.cargo/git
+        key: ${{ runner.os }}-cargo-index-${{ hashFiles('**/Cargo.lock') }}
+    
+    - name: Cache cargo build
+      uses: actions/cache@v3
+      with:
+        path: target
+        key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
+    
+    - name: Install NATS Server
+      run: |
+        if [ "${{ matrix.os }}" == "ubuntu-latest" ]; then
+          wget https://github.com/nats-io/nats-server/releases/download/v2.10.7/nats-server-v2.10.7-linux-amd64.tar.gz
+          tar -xzf nats-server-v2.10.7-linux-amd64.tar.gz
+          sudo mv nats-server-v2.10.7-linux-amd64/nats-server /usr/local/bin/
+        elif [ "${{ matrix.os }}" == "macos-latest" ]; then
+          brew install nats-server
+        fi
+      shell: bash
+      if: matrix.os != 'windows-latest'
+    
+    - name: Start NATS Server
+      run: nats-server -js &
+      if: matrix.os != 'windows-latest'
+    
+    - name: Check formatting
+      run: cargo fmt -- --check
+    
+    - name: Run clippy
+      run: cargo clippy -- -D warnings
+    
+    - name: Build
+      run: cargo build --verbose
+    
+    - name: Run tests
+      run: cargo test --verbose
+      if: matrix.os != 'windows-latest'
+    
+    - name: Run tests (without integration)
+      run: cargo test --verbose --lib
+      if: matrix.os == 'windows-latest'
+
+  coverage:
+    name: Code Coverage
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@stable
+    
+    - name: Install tarpaulin
+      run: cargo install cargo-tarpaulin
+    
+    - name: Install NATS Server
+      run: |
+        wget https://github.com/nats-io/nats-server/releases/download/v2.10.7/nats-server-v2.10.7-linux-amd64.tar.gz
+        tar -xzf nats-server-v2.10.7-linux-amd64.tar.gz
+        sudo mv nats-server-v2.10.7-linux-amd64/nats-server /usr/local/bin/
+    
+    - name: Start NATS Server
+      run: nats-server -js &
+    
+    - name: Generate coverage
+      run: cargo tarpaulin --verbose --all-features --workspace --timeout 300 --out Xml
+    
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./cobertura.xml
+
+  security_audit:
+    name: Security Audit
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: rustsec/audit-check@v1.4.1
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}

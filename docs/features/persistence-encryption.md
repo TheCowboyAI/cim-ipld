@@ -145,3 +145,6 @@ See `examples/persistence_demo.rs` for a complete working example demonstrating:
 - Index persistence and restoration
 - Encrypted CID wrappers
 - NATS native encryption configuration
+
+---
+Copyright 2025 Cowboy AI, LLC.

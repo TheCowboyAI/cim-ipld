@@ -1,3 +1,5 @@
+// Copyright 2025 Cowboy AI, LLC.
+
 //! CIM-IPLD: Content-addressed storage for the Composable Information Machine
 //! 
 //! This crate provides content-addressed storage using IPLD (InterPlanetary Linked Data)

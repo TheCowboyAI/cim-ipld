@@ -1,3 +1,5 @@
+// Copyright 2025 Cowboy AI, LLC.
+
 //! Integration tests for CIM-IPLD
 //!
 //! These tests verify the integration of various components working together.

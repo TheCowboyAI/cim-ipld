@@ -1,3 +1,5 @@
+// Copyright 2025 Cowboy AI, LLC.
+
 //! Core traits for CIM-IPLD
 
 use crate::{ContentType, Result, Cid};

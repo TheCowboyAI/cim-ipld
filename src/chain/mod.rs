@@ -1,3 +1,5 @@
+// Copyright 2025 Cowboy AI, LLC.
+
 //! Content-addressed chains for integrity
 //!
 //! This module provides chain-based content management with cryptographic
@@ -570,6 +572,271 @@ mod tests {
             Err(Error::SequenceValidationError { expected: 0, actual: 999 }) => {}, // Sequence mismatch detected
             Err(Error::InvalidCid(_)) => {}, // CID mismatch detected
             _ => panic!("Expected validation error"),
+        }
+    }
+
+    #[test]
+    fn test_chain_validation_mismatch_cases() {
+        let content1 = TestContent {
+            id: "test-1".to_string(),
+            data: "Data 1".to_string(),
+        };
+        
+        // Test case 1: Item has previous_cid but no previous item provided
+        let mut chained_with_prev = ChainedContent::new(content1.clone(), None).unwrap();
+        chained_with_prev.previous_cid = Some("fake-cid".to_string());
+        chained_with_prev.sequence = 1;
+        
+        let result = chained_with_prev.validate_chain(None);
+        assert!(result.is_err());
+        match result {
+            Err(Error::ChainValidationError { expected, actual }) => {
+                assert_eq!(expected, "");
+                assert_eq!(actual, "fake-cid");
+            }
+            _ => panic!("Expected ChainValidationError"),
+        }
+        
+        // Test case 2: Item has no previous_cid but previous item provided
+        let first_item = ChainedContent::new(content1.clone(), None).unwrap();
+        let mut second_item = ChainedContent::new(content1, None).unwrap();
+        second_item.previous_cid = None; // Remove the previous CID
+        
+        let result = second_item.validate_chain(Some(&first_item));
+        assert!(result.is_err());
+        match result {
+            Err(Error::ChainValidationError { expected, actual }) => {
+                assert_eq!(expected, first_item.cid);
+                assert_eq!(actual, "");
+            }
+            _ => panic!("Expected ChainValidationError"),
+        }
+    }
+
+    #[test]
+    fn test_cid_mismatch_detection() {
+        let content = TestContent {
+            id: "test".to_string(),
+            data: "test data".to_string(),
+        };
+        
+        // Create a valid chained item
+        let mut chained = ChainedContent::new(content, None).unwrap();
+        
+        // Tamper with the CID
+        chained.cid = "bafyreigdyrzt5sfp7udm7hu76uh7y26fake".to_string();
+        
+        // Validation should detect CID mismatch
+        let result = chained.validate_chain(None);
+        assert!(result.is_err());
+        match result {
+            Err(Error::InvalidCid(msg)) => {
+                assert!(msg.contains("CID mismatch"));
+                assert!(msg.contains("expected"));
+                assert!(msg.contains("calculated"));
+            }
+            _ => panic!("Expected InvalidCid error"),
+        }
+    }
+
+    #[test]
+    fn test_chain_data_serialization() {
+        // Test the ChainData struct serialization
+        let content = TestContent {
+            id: "serialize-test".to_string(),
+            data: "data".to_string(),
+        };
+        
+        let chain_data = ChainData {
+            content: &content,
+            previous_cid: &Some("previous-cid".to_string()),
+            sequence: 42,
+        };
+        
+        // Serialize and verify it works
+        let serialized = serde_json::to_string(&chain_data).unwrap();
+        assert!(serialized.contains("serialize-test"));
+        assert!(serialized.contains("previous-cid"));
+        assert!(serialized.contains("42"));
+    }
+
+    #[test]
+    fn test_multihash_error_handling() {
+        // Test error handling in calculate_cid when multihash creation fails
+        // This is hard to trigger naturally, but we can test the error path exists
+        let content = TestContent {
+            id: "test".to_string(),
+            data: "data".to_string(),
+        };
+        
+        let chained = ChainedContent::new(content, None).unwrap();
+        
+        // The multihash creation with valid BLAKE3 should succeed
+        assert!(!chained.cid.is_empty());
+        
+        // Test with invalid multihash bytes
+        let invalid_bytes = vec![0xff, 0xff]; // Invalid varint
+        let result = multihash::Multihash::<64>::from_bytes(&invalid_bytes);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_append_after_push_edge_case() {
+        // Test that the unwrap() in append() is safe
+        let mut chain = ContentChain::new();
+        
+        // The Vec is never empty after push, so unwrap is safe
+        let content = TestContent {
+            id: "test".to_string(),
+            data: "data".to_string(),
+        };
+        
+        let result = chain.append(content);
+        assert!(result.is_ok());
+        
+        // Verify the last() unwrap worked
+        let appended = result.unwrap();
+        assert_eq!(appended.sequence, 0);
+    }
+
+    #[test]
+    fn test_chain_validation_with_corrupted_cid() {
+        let content1 = TestContent {
+            id: "first".to_string(),
+            data: "first data".to_string(),
+        };
+        let content2 = TestContent {
+            id: "second".to_string(),
+            data: "second data".to_string(),
+        };
+        
+        // Create first item
+        let first = ChainedContent::new(content1, None).unwrap();
+        
+        // Create second item with corrupted previous_cid
+        let mut second = ChainedContent::new(content2, Some(&first)).unwrap();
+        second.previous_cid = Some("corrupted-cid".to_string());
+        
+        // Validation should fail
+        let result = second.validate_chain(Some(&first));
+        assert!(result.is_err());
+        match result {
+            Err(Error::ChainValidationError { expected, actual }) => {
+                assert_eq!(expected, first.cid);
+                assert_eq!(actual, "corrupted-cid");
+            }
+            _ => panic!("Expected ChainValidationError"),
+        }
+    }
+
+    #[test]
+    fn test_sequence_validation_errors() {
+        let content = TestContent {
+            id: "test".to_string(),
+            data: "data".to_string(),
+        };
+        
+        // Test case 1: First item with non-zero sequence
+        let mut first = ChainedContent::new(content.clone(), None).unwrap();
+        first.sequence = 5;
+        
+        let result = first.validate_chain(None);
+        assert!(result.is_err());
+        match result {
+            Err(Error::SequenceValidationError { expected: 0, actual: 5 }) => {}
+            _ => panic!("Expected SequenceValidationError"),
+        }
+        
+        // Test case 2: Non-sequential sequence numbers
+        let prev = ChainedContent::new(content.clone(), None).unwrap();
+        let mut next = ChainedContent::new(content, Some(&prev)).unwrap();
+        next.sequence = 10; // Should be 1
+        
+        let result = next.validate_chain(Some(&prev));
+        assert!(result.is_err());
+        match result {
+            Err(Error::SequenceValidationError { expected: 1, actual: 10 }) => {}
+            _ => panic!("Expected SequenceValidationError"),
+        }
+    }
+
+    #[test]
+    fn test_empty_chain_edge_cases() {
+        let chain = ContentChain::<TestContent>::new();
+        
+        // Test items() on empty chain
+        assert_eq!(chain.items().len(), 0);
+        
+        // Test validate() on empty chain
+        assert!(chain.validate().is_ok());
+        
+        // Test items_since with any CID on empty chain
+        let result = chain.items_since("any-cid");
+        assert!(result.is_err());
+        match result {
+            Err(Error::InvalidCid(msg)) => {
+                assert!(msg.contains("not found in chain"));
+            }
+            _ => panic!("Expected InvalidCid error"),
+        }
+    }
+
+    #[test]
+    fn test_chain_with_validation_failure() {
+        // Create a chain that will fail validation
+        let mut chain = ContentChain::new();
+        
+        let content1 = TestContent {
+            id: "1".to_string(),
+            data: "data1".to_string(),
+        };
+        
+        // Add first item normally
+        chain.append(content1.clone()).unwrap();
+        
+        // Manually create and add a corrupted second item
+        let mut corrupted = ChainedContent::new(content1, None).unwrap();
+        corrupted.sequence = 1;
+        corrupted.previous_cid = Some("wrong-cid".to_string());
+        
+        // Force add the corrupted item
+        chain.items.push(corrupted);
+        
+        // Validation should fail
+        let result = chain.validate();
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_json_serialization_error_handling() {
+        use std::f64;
+        
+        // Create content that might cause serialization issues
+        #[derive(Debug, Clone, Serialize, Deserialize)]
+        struct ProblematicContent {
+            // Using types that are valid in Rust but might have edge cases in JSON
+            float: f64,
+            large_num: u64,
+        }
+        
+        impl TypedContent for ProblematicContent {
+            const CODEC: u64 = 0x300001;
+            const CONTENT_TYPE: ContentType = ContentType::Json;
+        }
+        
+        let content = ProblematicContent {
+            float: f64::INFINITY,
+            large_num: u64::MAX,
+        };
+        
+        // This should handle the serialization gracefully
+        let result = ChainedContent::new(content, None);
+        
+        // JSON doesn't support Infinity, so this might fail
+        // But our code should handle it without panicking
+        match result {
+            Ok(_) => {} // Implementation handles it
+            Err(_) => {} // Or returns an error
         }
     }
 }

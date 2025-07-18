@@ -1,3 +1,5 @@
+// Copyright 2025 Cowboy AI, LLC.
+
 //! Basic usage examples for CIM-IPLD
 //!
 //! This example demonstrates the core functionality of CIM-IPLD including:

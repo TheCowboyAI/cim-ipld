@@ -1,3 +1,5 @@
+// Copyright 2025 Cowboy AI, LLC.
+
 //! Domain-based content partitioning for automatic bucket assignment
 //!
 //! This module provides intelligent content partitioning based on domain types

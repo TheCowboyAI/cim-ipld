@@ -1,3 +1,5 @@
+// Copyright 2025 Cowboy AI, LLC.
+
 //! Content service integrating storage, indexing, and transformation
 //!
 //! This module provides a high-level service for managing content with

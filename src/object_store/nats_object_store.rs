@@ -1,3 +1,5 @@
+// Copyright 2025 Cowboy AI, LLC.
+
 //! NATS Object Store wrapper for CIM-IPLD integration
 
 use std::collections::HashMap;

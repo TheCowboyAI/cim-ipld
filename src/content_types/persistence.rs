@@ -1,3 +1,5 @@
+// Copyright 2025 Cowboy AI, LLC.
+
 //! Persistence layer for content indexing using NATS KV store
 //!
 //! This module provides persistence capabilities for the in-memory index,
@@ -319,7 +321,7 @@ impl IndexPersistence {
         let persisted = PersistedTypeIndex {
             type_to_cids: type_to_cids.iter()
                 .map(|(k, v)| {
-                    let type_str = format!("{:?}", k);
+                    let type_str = format!("{k:?}");
                     (type_str, v.iter().map(|c| c.to_string()).collect())
                 })
                 .collect(),

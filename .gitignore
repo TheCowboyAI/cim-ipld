@@ -1,6 +1,47 @@
-/target
+# Copyright 2025 Cowboy AI, LLC.
+
+# Rust
+/target/
 **/*.rs.bk
 *.pdb
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
 .DS_Store
+Thumbs.db
+
+# Build artifacts
 /result
-/.direnv
+/result-*
+
+# Test artifacts
+*.profraw
+*.profdata
+/coverage/
+tarpaulin-report.html
+
+# Benchmarks
+/criterion/
+
+# Documentation
+/target/doc/
+/target/criterion/
+
+# Temporary files
+*.tmp
+*.bak
+*.orig
+
+# Environment
+.env
+.env.local
+
+# NATS
+nats-server.log
+jetstream/

@@ -2,109 +2,159 @@
 
 Content-addressed storage for the Composable Information Machine using IPLD (InterPlanetary Linked Data).
 
+# Composabable Information Machine (CIM)
+CIM is a new way to realize a distributed system using and Event Driven Arcitecture created by Cowboy AI.
+
+[![Rust](https://img.shields.io/badge/rust-1.70%2B-blue.svg)](https://www.rust-lang.org)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE-MIT)
+[![Tests](https://img.shields.io/badge/tests-206%20passing-green.svg)](docs/testing/test-report.md)
+
 ## Overview
 
-CIM-IPLD provides a robust content-addressed storage system with:
-- **Content Type Support**: Documents (PDF, DOCX, Markdown, Text), Images (JPEG, PNG, GIF, WebP), Audio (MP3, WAV, FLAC, AAC, OGG), Video (MP4, MOV, MKV, AVI)
-- **IPLD Codecs**: DAG-JSON, DAG-CBOR, Raw, and custom CIM-specific codecs
-- **Content Chains**: Cryptographically linked content with integrity verification
-- **NATS Object Store**: Distributed storage backend with caching
-- **Transformation Pipeline**: Convert between formats while preserving CIDs
-- **Domain Partitioning**: Organize content by domain boundaries
+CIM-IPLD provides a robust content-addressed storage system with comprehensive support for various content types, IPLD codecs, and distributed storage through NATS JetStream.
 
-## Features
+When using an Object Store, the "filename" becomes a CID. We can add Metadata by referencing the CID, 
+add a replacement, or **linked** data by referencing the previous CID.
 
-### Content Management
-- Automatic content type detection from magic bytes
-- Typed wrappers for all supported formats
-- Metadata extraction and preservation
-- Content validation and verification
+This allows us to distribute files into our Object Stores and retrieve them quite easily.
 
-### IPLD Integration
-- CID generation using BLAKE3 hashing
-- Multiple codec support with registry pattern
-- Canonical payload extraction for consistent CIDs
-- Chain-based content linking
+### Key Features
 
-### Storage Backend
-- NATS JetStream object store integration
-- LRU caching for performance
-- Domain-based partitioning
-- Compression support
+- **🗂️ Content Type Support**: Documents (PDF, DOCX, Markdown, Text), Images (JPEG, PNG, GIF, WebP), Audio (MP3, WAV, FLAC, AAC, OGG), Video (MP4, MOV, MKV, AVI)
+- **🔗 IPLD Integration**: DAG-JSON, DAG-CBOR, Raw, and custom CIM-specific codecs with canonical CID generation
+- **⛓️ Content Chains**: Cryptographically linked content with integrity verification
+- **💾 NATS Object Store**: Distributed storage backend with LRU caching and domain partitioning
+- **🔄 Transformation Pipeline**: Convert between formats while preserving CID traceability
+- **🔐 Security**: At-rest encryption with AES-256-GCM, ChaCha20-Poly1305, and XChaCha20-Poly1305
+- **🔍 Content Indexing**: Full-text search with metadata indexing and persistence
 
-## Usage
+## Quick Start
+
+### Installation
+
+Add to your `Cargo.toml`:
+
+```toml
+[dependencies]
+cim-ipld = "0.5.0"
+```
+
+### Basic Usage
 
 ```rust
 use cim_ipld::{ContentChain, TextDocument, DocumentMetadata};
 
-// Create a content chain
-let mut chain = ContentChain::new();
-
-// Add documents to the chain
-let doc = TextDocument {
-    content: "Hello, IPLD!".to_string(),
-    metadata: DocumentMetadata {
-        title: Some("My Document".to_string()),
-        ..Default::default()
-    },
-};
-
-let item = chain.append(doc)?;
-println!("Document CID: {}", item.cid);
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Create a content chain
+    let mut chain = ContentChain::new();
+    
+    // Add documents to the chain
+    let doc = TextDocument {
+        content: "Hello, IPLD!".to_string(),
+        metadata: DocumentMetadata {
+            title: Some("My Document".to_string()),
+            ..Default::default()
+        },
+    };
+    
+    let cid = chain.add_content(&doc).await?;
+    println!("Content CID: {}", cid);
+    
+    // Verify chain integrity
+    assert!(chain.verify().is_ok());
+    
+    Ok(())
+}
 ```
 
-## Architecture
+## Documentation
+
+### 📚 User Documentation
+- [Developer Guide](docs/guides/developer-guide.md) - Comprehensive guide for using CIM-IPLD
+- [API Reference](docs/api/api-reference.md) - Complete API documentation
+- [Migration Guide](docs/guides/migration-guide.md) - Migrating from other storage systems
+
+### 🏗️ Architecture
+- [System Architecture](docs/architecture/system-architecture.md) - Design and architecture overview
+- [CID Calculation](docs/architecture/cid-calculation.md) - How CIDs are generated
+- [Domain Partitioning](docs/architecture/domain-partitioning.md) - Content routing strategy
+
+### 🚀 Features
+- [Content Types](docs/features/content-types.md) - Supported file formats and type detection
+- [IPLD Codecs](docs/features/ipld-codecs.md) - Available IPLD codec implementations
+- [Persistence & Encryption](docs/features/persistence-encryption.md) - Storage and security features
+
+### 🧪 Testing
+- [Test Report](docs/testing/test-report.md) - Comprehensive test coverage report
+- [Test Guide](docs/testing/test-guide.md) - Running and writing tests
+
+### 📋 Project
+- [Changelog](CHANGELOG.md) - Version history and changes
+- [Implementation Status](docs/project/implementation-status.md) - Current feature completion status
+
+## Examples
+
+See the [examples/](examples/) directory for:
+- `basic_usage.rs` - Getting started with CIM-IPLD
+- `content_types_demo.rs` - Working with different content types
+- `persistence_demo.rs` - Using NATS persistence
+- `transformation_demo.rs` - Content transformation pipeline
+
+## Architecture Overview
 
 ```
-cim-ipld/
-├── src/
-│   ├── chain/          # Content chain implementation
-│   ├── codec/          # IPLD codec support
-│   ├── content_types/  # Type-specific content handling
-│   ├── object_store/   # NATS storage backend
-│   ├── traits.rs       # Core traits (TypedContent)
-│   ├── types.rs        # Type definitions
-│   └── error.rs        # Error handling
-├── tests/              # Comprehensive test suite
-└── examples/           # Usage examples
+┌─────────────────────────────────────────────────────────┐
+│                     Application Layer                    │
+├─────────────────────────────────────────────────────────┤
+│                    CIM-IPLD Core API                    │
+├─────────────┬─────────────┬─────────────┬──────────────┤
+│   Content   │    Chain    │    IPLD     │ Transform    │
+│   Types     │ Validation  │   Codecs    │ Pipeline     │
+├─────────────┴─────────────┴─────────────┴──────────────┤
+│                  Storage Abstraction                     │
+├─────────────────────────────────────────────────────────┤
+│              NATS JetStream Object Store                │
+└─────────────────────────────────────────────────────────┘
 ```
 
-## Testing
+## Development
 
-The module includes comprehensive test coverage:
-- **Unit Tests**: Core functionality testing
-- **Integration Tests**: End-to-end scenarios
-- **Doc Tests**: Example code in documentation
-- **Performance Benchmarks**: Throughput and latency tests
+### Running Tests
 
-Run tests with:
 ```bash
-cargo test          # All tests
-cargo test --lib    # Library tests only
-cargo test --doc    # Documentation tests
-cargo bench         # Performance benchmarks
+# Run all tests
+cargo test
+
+# Run with coverage
+cargo tarpaulin --out Html
+
+# Run benchmarks
+cargo bench
 ```
 
-## Status
+### Building Documentation
 
-✅ **100% Feature Complete**
-- All content types implemented and tested
-- Full IPLD codec support
-- Content chain operations working
-- NATS integration functional
-- 76+ tests passing
-- 5 doc tests passing
-- Ready for production use
+```bash
+# Build and open API docs
+cargo doc --open
+```
 
-## Dependencies
+## Contributing
 
-- `cid` - Content identifiers
-- `multihash` - Cryptographic hashing
-- `blake3` - BLAKE3 hashing algorithm
-- `serde` - Serialization framework
-- `async-nats` - NATS client
-- `tokio` - Async runtime
+Contributions are welcome! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
 
 ## License
 
-Apache-2.0 OR MIT
+This project is licensed under the MIT License - see the [LICENSE-MIT](LICENSE-MIT) file for details.
+
+## Acknowledgments
+
+Built with:
+- [IPLD](https://ipld.io/) - InterPlanetary Linked Data
+- [NATS](https://nats.io/) - High-performance messaging system
+- [Rust](https://www.rust-lang.org/) - Systems programming language
+
+
+---
+Copyright 2025 Cowboy AI, LLC.

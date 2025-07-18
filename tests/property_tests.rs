@@ -1,3 +1,5 @@
+// Copyright 2025 Cowboy AI, LLC.
+
 //! Property-based tests for CIM-IPLD
 //!
 //! These tests use proptest to verify properties that should hold

@@ -1,3 +1,5 @@
+// Copyright 2025 Cowboy AI, LLC.
+
 //! Example demonstrating index persistence with encryption at rest
 //!
 //! This example shows how to:

@@ -1,3 +1,5 @@
+// Copyright 2025 Cowboy AI, LLC.
+
 //! Content Types Demonstration
 //!
 //! This example showcases the various content types supported by CIM-IPLD

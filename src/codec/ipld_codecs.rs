@@ -1,3 +1,5 @@
+// Copyright 2025 Cowboy AI, LLC.
+
 //! Standard IPLD codecs and CIM-specific JSON types
 //!
 //! This module implements the standard IPLD codecs (dag-cbor, dag-json, etc.)

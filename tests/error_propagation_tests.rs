@@ -1,3 +1,5 @@
+// Copyright 2025 Cowboy AI, LLC.
+
 //! Integration tests for error propagation across the CIM-IPLD system
 //!
 //! These tests verify that errors are properly propagated and handled

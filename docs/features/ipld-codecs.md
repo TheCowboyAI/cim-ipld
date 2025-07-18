@@ -391,3 +391,6 @@ CIM-IPLD's codec support provides:
 - Extensible architecture
 
 This enables CIM to participate in the broader IPLD ecosystem while maintaining its domain-driven design principles and performance requirements. 
+
+---
+Copyright 2025 Cowboy AI, LLC.

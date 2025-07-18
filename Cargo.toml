@@ -1,11 +1,13 @@
+# Copyright 2025 Cowboy AI, LLC.
+
 [package]
 name = "cim-ipld"
-version = "0.3.0"
+version = "0.5.0"
 edition = "2021"
 authors = ["The Cowboy AI Team"]
 description = "IPLD implementation for Composable Information Machines"
 repository = "https://github.com/thecowboyai/cim-ipld"
-license = "Apache-2.0 OR MIT"
+license = "MIT"
 keywords = ["ipld", "cid", "content-addressing", "cim", "dag"]
 categories = ["data-structures", "encoding", "cryptography"]
 

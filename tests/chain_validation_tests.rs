@@ -1,3 +1,5 @@
+// Copyright 2025 Cowboy AI, LLC.
+
 //! Chain Validation Tests
 //!
 //! Tests for content chain validation and integrity

@@ -1,3 +1,5 @@
+// Copyright 2025 Cowboy AI, LLC.
+
 //! Event CID Generation Example
 //!
 //! This example demonstrates how to create events with Content Identifiers (CIDs)

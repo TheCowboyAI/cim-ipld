@@ -1,3 +1,5 @@
+// Copyright 2025 Cowboy AI, LLC.
+
 //! Performance benchmarks for CIM-IPLD
 //!
 //! Benchmarks for measuring performance of core operations.

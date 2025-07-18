@@ -1,3 +1,5 @@
+// Copyright 2025 Cowboy AI, LLC.
+
 //! Utility functions for pulling content from NATS JetStream by CID
 
 use super::{NatsObjectStore, ContentBucket, ObjectInfo, ObjectStoreError, Result};

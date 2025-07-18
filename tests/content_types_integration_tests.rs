@@ -1,3 +1,5 @@
+// Copyright 2025 Cowboy AI, LLC.
+
 //! Content Types Integration Tests
 //!
 //! Tests for various content types and their metadata
